@@ -116,6 +116,13 @@ typedef struct SDL_SysWMinfo {
 	} info;
 } SDL_SysWMinfo;
 
+/* The UNIX custom input method information structure */
+typedef struct SDL_SysIMinfo {
+	SDL_version version;
+	XIM xim;			/* The X11 input mathod */
+	XIC *xic;			/* The X11 input mathod context */
+} SDL_SysIMinfo;
+
 #elif defined(SDL_VIDEO_DRIVER_NANOX)
 #include <microwin/nano-X.h>
 
