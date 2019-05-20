@@ -259,6 +259,12 @@ AC_HELP_STRING([--enable-events], [Enable the events subsystem [[default=yes]]])
 if test x$enable_events != xyes; then
     AC_DEFINE(SDL_EVENTS_DISABLED)
 fi
+AC_ARG_ENABLE(im-event,
+AC_HELP_STRING([--enable-im-event], [Enable the IM events subsystem [default=yes]]]),
+              , enable_im_event=yes)
+if test x$enable_im_event = xyes; then
+   AC_DEFINE(ENABLE_IM_EVENT)
+fi
 AC_ARG_ENABLE(joystick,
 AC_HELP_STRING([--enable-joystick], [Enable the joystick subsystem [[default=yes]]]),
               , enable_joystick=yes)
@@ -1127,6 +1133,17 @@ AC_HELP_STRING([--enable-video-x11-xrandr], [enable X11 Xrandr extension for ful
             if test x$definitely_enable_video_x11_xrandr = xyes; then
                 AC_DEFINE(SDL_VIDEO_DRIVER_X11_XRANDR)
             fi
+            AC_MSG_CHECKING(for const parameter to _XData32)
+            have_const_param_xdata32=no
+            AC_TRY_COMPILE([
+              #include <X11/Xlibint.h>
+              extern int _XData32(Display *dpy,register _Xconst long *data,unsigned len);
+            ],[
+            ],[
+            have_const_param_xdata32=yes
+            AC_DEFINE(SDL_VIDEO_DRIVER_X11_CONST_PARAM_XDATA32)
+            ])
+            AC_MSG_RESULT($have_const_param_xdata32)
         fi
     fi
 }
