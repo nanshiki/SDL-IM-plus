@@ -1198,35 +1198,17 @@ char *DX5_SetIMValues(_THIS, SDL_imvalue value, int alt)
 	switch (value) {
 		case SDL_IM_ENABLE:
 			if (alt) {
-				/*
-				if (ImmAssociateContextEx(SDL_Window, IM_Context.SDL_IMC, IACE_DEFAULT)) {
+				if(!IM_Context.bEnable) {
+					ImmAssociateContext(SDL_Window, IM_Context.SDL_IMC);
 					IM_Context.bEnable = 1;
-					return NULL;
 				}
-				else {
-					IM_Context.bEnable = 0;
-					SDL_SetError(
-						"ImmAssociateContext: can not enable IM.");
-					return "ImmAssociateContext: can not enable IM.";
-				}
-				*/
-				IM_Context.bEnable = 1;
 				return NULL;
 			}
 			else {
-				/*
-				if (ImmAssociateContextEx(
-					SDL_Window, IM_Context.SDL_IMC, IACE_IGNORENOCONTEXT)) 
-				{
+				if(IM_Context.bEnable) {
+					IM_Context.SDL_IMC = ImmAssociateContext(SDL_Window, 0);
 					IM_Context.bEnable = 0;
-					return NULL;
 				}
-				else {
-					SDL_SetError("ImmAssociateContext: can not disable IM.");
-					return "ImmAssociateContext: can not disable IM.";
-				}
-				*/
-				IM_Context.bEnable = 0;
 				return NULL;
 			}
 		case SDL_IM_FLIP:
