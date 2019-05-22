@@ -1,6 +1,6 @@
 Summary: Simple DirectMedia Layer
 Name: SDL
-Version: 1.2.15
+Version: @SDL_VERSION@
 Release: 1
 Source: http://www.libsdl.org/release/%{name}-%{version}.tar.gz
 URL: http://www.libsdl.org/
@@ -9,7 +9,7 @@ Group: System Environment/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
 Prefix: %{_prefix}
 %ifos linux
-Provides: libSDL-1.2.so.0
+Provides: libSDLIM-1.2.so.0
 %endif
 
 %define __defattr %defattr(-,root,root)
@@ -54,7 +54,7 @@ make install prefix=$RPM_BUILD_ROOT%{prefix} \
              includedir=$RPM_BUILD_ROOT%{_includedir} \
              datadir=$RPM_BUILD_ROOT%{_datadir} \
              mandir=$RPM_BUILD_ROOT%{_mandir}
-ln -s libSDL-1.2.so.0 $RPM_BUILD_ROOT%{_libdir}/libSDL-1.1.so.0
+ln -s libSDLIM-1.2.so.0 $RPM_BUILD_ROOT%{_libdir}/libSDLIM-1.1.so.0
 %else
 %makeinstall
 %endif
@@ -75,9 +75,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/lib*.a
 %{_libdir}/lib*.la
 %{_libdir}/lib*.%{__soext}
-%dir %{_includedir}/SDL
-%{_includedir}/SDL/*.h
-%{_libdir}/pkgconfig/sdl.pc
+%dir %{_includedir}/SDLIM
+%{_includedir}/SDLIM/*.h
+%{_libdir}/pkgconfig/sdlim.pc
 %{_datadir}/aclocal/*
 %{_mandir}/man3/*
 
@@ -101,7 +101,7 @@ rm -rf $RPM_BUILD_ROOT
 - Build Release
 
 * Sat Dec 18 1999 John Buswell <johnb@mandrakesoft.com>
-- Add symlink for libSDL-1.0.so.0 required by sdlbomber
+- Add symlink for libSDLIM-1.0.so.0 required by sdlbomber
 - Added docs
 
 * Thu Dec 09 1999 Lenny Cartier <lenny@mandrakesoft.com>

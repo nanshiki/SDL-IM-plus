@@ -217,15 +217,15 @@ if test x$merge = xyes; then
     cd build
     target=`find . -mindepth 4 -maxdepth 4 -type f -name '*.dylib' | head -1 | sed 's|.*/||'`
     (lipo -create -o $output/$target `find . -mindepth 4 -maxdepth 4 -type f -name "*.dylib"` &&
-     ln -sf $target $output/libSDL.dylib &&
-     lipo -create -o $output/libSDL.a */build/.libs/libSDL.a &&
-     cp $native_path/build/.libs/libSDL.la $output &&
-     cp $native_path/build/.libs/libSDL.lai $output &&
-     cp $native_path/build/libSDL.la . &&
-     lipo -create -o $output/libSDLmain.a */build/.libs/libSDLmain.a &&
-     cp $native_path/build/.libs/libSDLmain.la $output &&
-     cp $native_path/build/.libs/libSDLmain.lai $output &&
-     cp $native_path/build/libSDLmain.la . &&
+     ln -sf $target $output/libSDLIM.dylib &&
+     lipo -create -o $output/libSDLIM.a */build/.libs/libSDLIM.a &&
+     cp $native_path/build/.libs/libSDLIM.la $output &&
+     cp $native_path/build/.libs/libSDLIM.lai $output &&
+     cp $native_path/build/libSDLIM.la . &&
+     lipo -create -o $output/libSDLIMmain.a */build/.libs/libSDLIMmain.a &&
+     cp $native_path/build/.libs/libSDLIMmain.la $output &&
+     cp $native_path/build/.libs/libSDLIMmain.lai $output &&
+     cp $native_path/build/libSDLIMmain.la . &&
      echo "Build complete!" &&
      echo "Files can be found in the build directory.") || exit 4
     cd ..
@@ -262,7 +262,7 @@ if test x$mandir = x; then
 fi
 if test x$install_bin = xyes; then
     do_install sh $auxdir/mkinstalldirs $bindir
-    do_install /usr/bin/install -c -m 755 build/$native_path/sdl-config $bindir/sdl-config
+    do_install /usr/bin/install -c -m 755 build/$native_path/sdlim-config $bindir/sdlim-config
 fi
 if test x$install_hdrs = xyes; then
     do_install sh $auxdir/mkinstalldirs $includedir/SDL
@@ -274,14 +274,14 @@ if test x$install_hdrs = xyes; then
 fi
 if test x$install_lib = xyes; then
     do_install sh $auxdir/mkinstalldirs $libdir
-    do_install sh build/$native_path/libtool --mode=install /usr/bin/install -c  build/libSDL.la $libdir/libSDL.la
-    do_install sh build/$native_path/libtool --mode=install /usr/bin/install -c  build/libSDLmain.la $libdir/libSDLmain.la
+    do_install sh build/$native_path/libtool --mode=install /usr/bin/install -c  build/libSDLIM.la $libdir/libSDLIM.la
+    do_install sh build/$native_path/libtool --mode=install /usr/bin/install -c  build/libSDLIMmain.la $libdir/libSDLIMmain.la
 fi
 if test x$install_data = xyes; then
     do_install sh $auxdir/mkinstalldirs $datadir/aclocal
-    do_install /usr/bin/install -c -m 644 $srcdir/sdl.m4 $datadir/aclocal/sdl.m4
+    do_install /usr/bin/install -c -m 644 $srcdir/sdlim.m4 $datadir/aclocal/sdlim.m4
     do_install sh $auxdir/mkinstalldirs $libdir/pkgconfig
-    do_install /usr/bin/install -m 644 build/$native_path/sdl.pc $libdir/pkgconfig/sdl.pc
+    do_install /usr/bin/install -m 644 build/$native_path/sdlim.pc $libdir/pkgconfig/sdlim.pc
 fi
 if test x$install_man = xyes; then
     do_install sh $auxdir/mkinstalldirs $mandir/man3

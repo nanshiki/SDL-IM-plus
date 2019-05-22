@@ -24,29 +24,29 @@
    <QPG:Values>
       <QPG:Files>
          <QPG:Add file="./COPYING" install="LicenseUrl/" handling="repdata"/>
-         <QPG:Add permissions="0755" file="./src/.libs/libSDL-@SDL_MAJOR_VERSION@.@SDL_MINOR_VERSION@.so.@LT_AGE@" install="/usr/lib/"/>
-         <QPG:Add filetype="symlink" file="libSDL.so" install="/usr/lib/" linkto="libSDL-@SDL_MAJOR_VERSION@.@SDL_MINOR_VERSION@.so.@LT_AGE@"/>
-         <QPG:Add permissions="0644" file="./src/.libs/libSDL.a" install="/usr/lib/"/>
-         <QPG:Add permissions="0644" file="./src/.libs/libSDL.lai" install="/usr/lib/libSDL.la"/>
-         <QPG:Add permissions="0644" file="./src/.libs/libSDLmain.a" install="/usr/lib/"/>
-         <QPG:Add permissions="0644" file="./src/.libs/libSDLmain.lai" install="/usr/lib/libSDLmain.lai"/>
-         <QPG:Add permissions="0644" file="./include/*.h" install="/usr/include/SDL/"/>
-         <QPG:Add permissions="0755" file="./sdl-config" install="/usr/bin/"/>
-         <QPG:Add permissions="0644" file="./BUGS" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./COPYING" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./CREDITS" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./INSTALL" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./README" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./README-SDL.txt" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./README.CVS" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./README.QNX" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./TODO" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./WhatsNew" install="/usr/share/doc/SDL12/"/>
-         <QPG:Add permissions="0644" file="./docs.html" install="/usr/share/doc/SDL12/Changes.html"/>
-         <QPG:Add permissions="0644" file="./docs/index.html" install="/usr/share/doc/SDL12/docs/"/>
-         <QPG:Add permissions="0644" file="./docs/html/*.html" install="/usr/share/doc/SDL12/docs/html/"/>
+         <QPG:Add permissions="0755" file="./src/.libs/libSDLIM-@SDL_MAJOR_VERSION@.@SDL_MINOR_VERSION@.so.@LT_AGE@" install="/usr/lib/"/>
+         <QPG:Add filetype="symlink" file="libSDLIM.so" install="/usr/lib/" linkto="libSDLIM-@SDL_MAJOR_VERSION@.@SDL_MINOR_VERSION@.so.@LT_AGE@"/>
+         <QPG:Add permissions="0644" file="./src/.libs/libSDLIM.a" install="/usr/lib/"/>
+         <QPG:Add permissions="0644" file="./src/.libs/libSDLIM.lai" install="/usr/lib/libSDLIM.la"/>
+         <QPG:Add permissions="0644" file="./src/.libs/libSDLIMmain.a" install="/usr/lib/"/>
+         <QPG:Add permissions="0644" file="./src/.libs/libSDLIMmain.lai" install="/usr/lib/libSDLIMmain.lai"/>
+         <QPG:Add permissions="0644" file="./include/*.h" install="/usr/include/SDLIM/"/>
+         <QPG:Add permissions="0755" file="./sdlim-config" install="/usr/bin/"/>
+         <QPG:Add permissions="0644" file="./BUGS" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./COPYING" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./CREDITS" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./INSTALL" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./README" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./README-SDL.txt" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./README.CVS" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./README.QNX" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./TODO" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./WhatsNew" install="/usr/share/doc/SDLIM12/"/>
+         <QPG:Add permissions="0644" file="./docs.html" install="/usr/share/doc/SDLIM12/Changes.html"/>
+         <QPG:Add permissions="0644" file="./docs/index.html" install="/usr/share/doc/SDLIM12/docs/"/>
+         <QPG:Add permissions="0644" file="./docs/html/*.html" install="/usr/share/doc/SDLIM12/docs/html/"/>
          <QPG:Add permissions="0644" file="./docs/man3/*.3" install="/usr/share/man/man3/"/>
-         <QPG:Add permissions="0644" file="./sdl.m4" install="/usr/share/aclocal/"/>
+         <QPG:Add permissions="0644" file="./sdlim.m4" install="/usr/share/aclocal/"/>
       </QPG:Files>
       <QPG:PackageFilter>
          <QPM:PackageManifest>
