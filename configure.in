@@ -96,7 +96,7 @@ EXTRA_LDFLAGS="$BASE_LDFLAGS"
 #    fi
 #done
 SDL_CFLAGS="$BASE_CFLAGS"
-SDL_LIBS="-lSDL $BASE_LDFLAGS"
+SDL_LIBS="-lSDLIM $BASE_LDFLAGS"
 CPPFLAGS="$CPPFLAGS $EXTRA_CFLAGS"
 CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 LDFLAGS="$LDFLAGS $EXTRA_LDFLAGS"
@@ -2700,7 +2700,7 @@ case "$host" in
         # HACK: Reset EXTRA_LDFLAGS; the only thing it contains at this point
         # is -lm which is not needed under Mac OS X. But for some reasons it
         # also tends to contain spurious -L switches, which we don't want to
-        # use here or in sdl-config. Hence we reset it.
+        # use here or in sdlim-config. Hence we reset it.
         EXTRA_LDFLAGS=""
 
         CheckVisibilityHidden
@@ -2929,9 +2929,10 @@ case "$ARCH" in
       SDL_LIBS="$SDL_LIBS -Wl,-framework,Carbon"
     fi
     # Evil hack to allow static linking on Mac OS X
-    SDL_STATIC_LIBS="\${libdir}/libSDLmain.a \${libdir}/libSDL.a $EXTRA_LDFLAGS"
+    SDL_STATIC_LIBS="\${libdir}/libSDLIMmain.a \${libdir}/libSDL.a $EXTRA_LDFLAGS"
     ;;
   *)
+    SDL_LIBS="$SDL_LIBS -lX11"
     SDL_STATIC_LIBS="$SDL_LIBS $EXTRA_LDFLAGS"
     ;;
 esac
@@ -2975,7 +2976,7 @@ AC_SUBST(EXTRA_LDFLAGS)
 AC_SUBST(WINDRES)
 
 AC_OUTPUT([
-    Makefile sdl-config SDL.spec SDL.qpg sdl.pc
+    Makefile sdlim-config SDLIM.spec SDLIM.qpg sdlim.pc
 ], [
     : >build-deps
     if test x"$MAKE" = x; then MAKE=make; fi; $MAKE depend
