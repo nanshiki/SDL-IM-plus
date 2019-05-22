@@ -6,7 +6,7 @@ AR	= ar
 RANLIB	= ranlib
 
 CONFIG_H = include/SDL_config.h
-TARGET  = libSDL.a
+TARGET  = libSDLIM.a
 SOURCES = \
 	src/*.c \
 	src/audio/*.c \

@@ -5,9 +5,9 @@ AR = sh-elf-ar
 
 ifdef GL
 DEFS += -DSDL_VIDEO_OPENGL=1
-TARGET = libSDL_gl.a
+TARGET = libSDLIM_gl.a
 else
-TARGET = libSDL.a
+TARGET = libSDLIM.a
 endif
 
 CFLAGS=$(KOS_CFLAGS) $(DEFS) -Iinclude
