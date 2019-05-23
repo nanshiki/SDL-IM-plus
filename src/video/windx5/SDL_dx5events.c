@@ -675,8 +675,8 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			else
 			{
 				lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-				if (IM_Context.bFlip)
-					return DefWindowProc(hwnd, WM_IME_SETCONTEXT, wParam, lParam);
+				//if (IM_Context.bFlip)
+				return DefWindowProc(hwnd, WM_IME_SETCONTEXT, wParam, lParam);
 			}
 			FLIP_BREAK;
 		case WM_IME_COMPOSITION:
@@ -1098,7 +1098,8 @@ void DX5_DestroyWindow(_THIS)
 	if ( SDL_windowid ) {
 		SetWindowLongPtr(SDL_Window, GWLP_WNDPROC, (LONG_PTR)userWindowProc);
 	} else {
-		DestroyWindow(SDL_Window);
+		// for MS-IME
+		//DestroyWindow(SDL_Window);
 	}
 	SDL_UnregisterApp();
 
