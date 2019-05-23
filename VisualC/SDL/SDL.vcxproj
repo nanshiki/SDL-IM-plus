@@ -190,7 +190,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>winmm.lib;dxguid.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\Release/SDL.dll</OutputFile>
+      <OutputFile>$(SolutionDir)$(Configuration)\SDL.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <ProgramDatabaseFile>.\Release/SDL.pdb</ProgramDatabaseFile>
