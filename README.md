@@ -42,7 +42,7 @@ Debian 系の場合、apt-get で autoconf libx11-dev libxext-dev あたりをインストール
 　IM の ON/OFF 状態が stat に入ります。1 で ON 状態です。
 
 `int SDL_SetIMPosition(int x, int y); `  
-　IM の変換位置を指定します。
+　IM の変換位置を指定します。  
 引数: x  X 座標,  y  Y 座標  
 返値: 0 でエラー、それ以外で成功
 
@@ -52,7 +52,7 @@ Debian 系の場合、apt-get で autoconf libx11-dev libxext-dev あたりをインストール
 返値  文字列長  
 
 ## 環境変数
-Linux 版の場合、SDLIM_STYLE で Root, OverTheSpot, OnTheSpot の設定をする事でアプリケーションの変換表示の選択ができますが、OnTheSpot での変換文字列描画には対応していませんのであまり意味はありません。  
+Linux 版の場合、環境変数 SDLIM_STYLE で Root, OverTheSpot, OnTheSpot の設定をする事でアプリケーションの変換表示の選択ができますが、OnTheSpot での変換文字列描画には対応していませんのであまり意味はありません。  
 未設定の場合は OverTheSpot となります。  
 
 ## ライセンス
