@@ -2612,7 +2612,7 @@ void DX5_WinPAINT(_THIS, HDC hdc)
 
 #ifdef ENABLE_IM_EVENT
 
-void init_ime() 
+static void init_ime() 
 {
 //	IM_Context.SDL_IMC = ImmGetContext(SDL_Window);
 
@@ -2627,7 +2627,7 @@ void init_ime()
 	IM_Context.notify_func = NULL;
 }
 
-void free_ime() 
+static void free_ime() 
 {
 	if (IM_Context.string.im_wide_char_buffer) {
 		free(IM_Context.string.im_wide_char_buffer);
