@@ -71,9 +71,11 @@ static WNDPROCTYPE userWindowProc = NULL;
 #ifdef ENABLE_IM_EVENT
 #include <imm.h>
 int DX5_HandleComposition(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 /* data field required by DX5_HandleComposition */
 static COMPOSITIONFORM form;
+static DWORD end_ticks;
+#define	IME_MESSAGE_WAIT	1
+#define	IME_END_CR_WAIT		50
 #endif
 
 static HWND GetTopLevelParent(HWND hWnd)
@@ -288,24 +290,31 @@ static void handle_keyboard(const int numevents, DIDEVICEOBJECTDATA *keybuf)
 {
 	int i;
 	SDL_keysym keysym;
+	MSG msg;
 
-#ifdef ENABLE_IM_EVENT
-	if (!IM_Context.bCompos) {
-#endif
+	Sleep(IME_MESSAGE_WAIT);
+
+	while(PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+		if(GetMessage(&msg, NULL, 0, 0) > 0) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
 
 	/* Translate keyboard messages */
 	for ( i=0; i<numevents; ++i ) {
 		if ( keybuf[i].dwData & 0x80 ) {
-			posted = SDL_PrivateKeyboard(SDL_PRESSED,
-				    TranslateKey(keybuf[i].dwOfs, &keysym, 1));
+#ifdef ENABLE_IM_EVENT
+			if (!IM_Context.bCompos && (GetTickCount() - end_ticks > IME_END_CR_WAIT || keybuf[i].dwOfs != 0x1c)) {
+#endif
+				posted = SDL_PrivateKeyboard(SDL_PRESSED, TranslateKey(keybuf[i].dwOfs, &keysym, 1));
+#ifdef ENABLE_IM_EVENT
+			}
+#endif
 		} else {
-			posted = SDL_PrivateKeyboard(SDL_RELEASED,
-				    TranslateKey(keybuf[i].dwOfs, &keysym, 0));
+			posted = SDL_PrivateKeyboard(SDL_RELEASED, TranslateKey(keybuf[i].dwOfs, &keysym, 0));
 		}
 	}
-#ifdef ENABLE_IM_EVENT
-	}
-#endif
 }
 
 static void post_mouse_motion(int relative, Sint16 x, Sint16 y)
@@ -637,7 +646,8 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 					}
 				}
 			}
-			FLIP_BREAK;
+			return 0;
+			//FLIP_BREAK;
 			/* add for im */
 		case WM_INPUTLANGCHANGE:
 			SendMessage(hwnd, WM_IME_NOTIFY, wParam, lParam);
@@ -655,6 +665,7 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 			//FLIP_BREAK;
 		case WM_IME_ENDCOMPOSITION:
+			end_ticks = GetTickCount();
 			IM_Context.bCompos = 0;
 			FLIP_BREAK;
 		case WM_IME_NOTIFY:
@@ -662,8 +673,9 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 				IM_Context.notify_func(IM_Context.notify_data);
 
 			// To flip state window in fullscreen mode
-			if (IM_Context.bFlip && IM_Context.bEnable)
+			if (IM_Context.bFlip && IM_Context.bEnable) {
 				DefWindowProc(hwnd, WM_IME_NOTIFY, IMN_OPENSTATUSWINDOW, lParam);
+			}
 			FLIP_BREAK;
 		case WM_IME_SETCONTEXT:
 			// To show the composition window in fullscreen mode
