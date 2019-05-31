@@ -27,6 +27,7 @@ RedHat 系の場合、yum で autoconf libXt-devel libXaw-devel あたりをインストールし
 引数: SDL_imvalue  
 　SDL_IM_ENABLE　IM の有効無効  
 　SDL_IM_ONOFF　IM の ON/OFF  
+　SDL_IM_FONT_SIZE　変換中文字列のフォントサイズ(Windows のみ)  
 返値: エラー文字列 NULLなら正常終了  
 例)
 `SDL_SetIMValues(SDL_IM_ENABLE, 1, NULL);`  
@@ -37,6 +38,7 @@ RedHat 系の場合、yum で autoconf libXt-devel libXaw-devel あたりをインストールし
 引数: SDL_imvalue  
 　SDL_IM_ENABLE　IM の有効無効  
 　SDL_IM_ONOFF　IM の ON/OFF  
+　SDL_IM_FONT_SIZE　変換中文字列のフォントサイズ(Windows のみ)  
 返値: エラー文字列 NULLなら正常終了  
 例)
 `SDL_GetIMValues(SDL_IM_ONOFF, &stat, NULL);`  
@@ -48,9 +50,14 @@ RedHat 系の場合、yum で autoconf libXt-devel libXaw-devel あたりをインストールし
 返値: 0 でエラー、それ以外で成功
 
 `int SDL_FlushIMString(void *buffer);`  
-変換確定した文字列を取得します。  
+　変換確定した文字列を取得します。  
 引数: buffer 文字列を格納するバッファ NULL の場合文字列長のみ取得  
 返値  文字列長  
+
+`void SDL_SetCompositionFontName(const char *name);`  
+　変換中文字列で使用するフォント名を指定します。  
+引数: name フォント名(Shift JIS)  
+　Windows のみの対応です。  
 
 ## 環境変数
 Linux 版の場合、環境変数 SDLIM_STYLE で Root, OverTheSpot, OnTheSpot の設定をする事でアプリケーションの変換表示の選択ができますが、OnTheSpot での変換文字列描画には対応していませんのであまり意味はありません。  
