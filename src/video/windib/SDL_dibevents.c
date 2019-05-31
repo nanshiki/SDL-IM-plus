@@ -72,6 +72,7 @@ static WNDPROCTYPE userWindowProc = NULL;
 int DIB_HandleComposition(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 /* data field required by DIB_HandleComposition */
 static COMPOSITIONFORM form;
+extern wchar_t CompositionFontName[LF_FACESIZE];
 #endif
 
 #ifdef SDL_VIDEO_DRIVER_GAPI
@@ -893,6 +894,23 @@ char *DIB_SetIMValues(_THIS, SDL_imvalue value, int alt)
 				ImmReleaseContext(SDL_Window, imc);
 			}
 			return NULL;
+		case SDL_IM_FONT_SIZE:
+			{
+				LOGFONTW lf;
+				HIMC imc = ImmGetContext(SDL_Window);
+				HDC hc = GetDC(SDL_Window);
+				HFONT hf = (HFONT)GetCurrentObject(hc, OBJ_FONT);
+				GetObjectW(hf, sizeof(lf), &lf);
+				ReleaseDC(SDL_Window, hc);
+				if(CompositionFontName[0]) {
+					wcscpy(lf.lfFaceName, CompositionFontName);
+				}
+				lf.lfHeight = -alt;
+				lf.lfWidth = alt / 2;
+				ImmSetCompositionFontW(imc, &lf);
+				ImmReleaseContext(SDL_Window, imc);
+			}
+			return NULL;
 		default:
 			SDL_SetError("SDL_SetIMValues: unknow enum type: %d", value);
 			return "SDL_SetIMValues: unknow enum type";
@@ -932,6 +950,16 @@ char *DIB_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 				ImmReleaseContext(SDL_Window, imc);
 				return NULL;
 			}
+		case SDL_IM_FONT_SIZE:
+			{
+				LOGFONTW lf;
+				HDC hc = GetDC(SDL_Window);
+				HFONT hf = (HFONT)GetCurrentObject(hc, OBJ_FONT);
+				GetObjectW(hf, sizeof(lf), &lf);
+				ReleaseDC(SDL_Window, hc);
+				*alt = abs(lf.lfHeight);
+			}
+			return NULL;
 		default:
 			SDL_SetError("DIB_GetIMValues: nuknown enum type %d", value);
 			return "DIB_GetIMValues: nuknown enum type";
