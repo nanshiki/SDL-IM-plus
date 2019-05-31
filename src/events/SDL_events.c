@@ -594,3 +594,18 @@ int SDL_FlushIMString(void *buffer)
 #endif
 	return 0;
 }
+
+#ifdef WIN32
+wchar_t CompositionFontName[LF_FACESIZE];
+#endif
+
+void SDL_SetCompositionFontName(const char *name)
+{
+#ifdef WIN32
+	int len = MultiByteToWideChar(CP_ACP, 0, name, -1, NULL, 0);
+	if(len < LF_FACESIZE) {
+		MultiByteToWideChar(CP_ACP, 0, name, -1, CompositionFontName, len);
+	}
+#endif
+}
+
