@@ -74,6 +74,7 @@ int DX5_HandleComposition(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 /* data field required by DX5_HandleComposition */
 static COMPOSITIONFORM form;
 static DWORD end_ticks;
+extern wchar_t CompositionFontName[LF_FACESIZE];
 #define	IME_MESSAGE_WAIT	1
 #define	IME_END_CR_WAIT		50
 #endif
@@ -1242,6 +1243,23 @@ char *DX5_SetIMValues(_THIS, SDL_imvalue value, int alt)
 				ImmReleaseContext(SDL_Window, imc);
 			}
 			return NULL;
+		case SDL_IM_FONT_SIZE:
+			{
+				LOGFONTW lf;
+				HIMC imc = ImmGetContext(SDL_Window);
+				HDC hc = GetDC(SDL_Window);
+				HFONT hf = (HFONT)GetCurrentObject(hc, OBJ_FONT);
+				GetObjectW(hf, sizeof(lf), &lf);
+				ReleaseDC(SDL_Window, hc);
+				if(CompositionFontName[0]) {
+					wcscpy(lf.lfFaceName, CompositionFontName);
+				}
+				lf.lfHeight = -alt;
+				lf.lfWidth = alt / 2;
+				ImmSetCompositionFontW(imc, &lf);
+				ImmReleaseContext(SDL_Window, imc);
+			}
+			return NULL;
 		default:
 			SDL_SetError("SDL_SetIMValues: unknow enum type: %d", value);
 			return "SDL_SetIMValues: unknow enum type";
@@ -1281,6 +1299,16 @@ char *DX5_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 				ImmReleaseContext(SDL_Window, imc);
 				return NULL;
 			}
+		case SDL_IM_FONT_SIZE:
+			{
+				LOGFONTW lf;
+				HDC hc = GetDC(SDL_Window);
+				HFONT hf = (HFONT)GetCurrentObject(hc, OBJ_FONT);
+				GetObjectW(hf, sizeof(lf), &lf);
+				ReleaseDC(SDL_Window, hc);
+				*alt = abs(lf.lfHeight);
+			}
+			return NULL;
 		default:
 			SDL_SetError("DX5_GetIMValues: nuknown enum type %d", value);
 			return "DX5_GetIMValues: nuknown enum type";
