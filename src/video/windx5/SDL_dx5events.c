@@ -639,6 +639,14 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			if (IM_Context.bEnable)
 				SendMessage(hwnd, WM_IME_NOTIFY, wParam, lParam);
 			*/
+			if((lParam & 0xff0000) == 0x360000) {
+				SDL_keysym keysym;
+				if(msg == WM_KEYDOWN) {
+					SDL_PrivateKeyboard(SDL_PRESSED, TranslateKey((lParam >> 16) & 0xff, &keysym, 1));
+				} else if(msg == WM_KEYUP) {
+					SDL_PrivateKeyboard(SDL_RELEASED, TranslateKey((lParam >> 16) & 0xff, &keysym, 0));
+				}
+			}
 			if (msg == WM_KEYDOWN) {
 				if(wParam == VK_PROCESSKEY) {
 					WPARAM vkey = ImmGetVirtualKey(hwnd);
