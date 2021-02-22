@@ -8,7 +8,7 @@ SDL-1.2 [README](https://github.com/nanshiki/SDL-IM-plus/blob/master/README)
 
 ## ビルド
 ### Windows  
-Visual Studio Professional 2015 で VisualC/SDL.sln を読み込み、ビルドしてください。  
+Visual Studio 2015 で VisualC/SDL.sln を読み込み、ビルドしてください。  
 
 ### Linux  
 $ ./autogen.sh  
@@ -16,10 +16,10 @@ $ ./configure
 $ make  
 $ sudo make install  
 
-Debian 系の場合、apt-get で autoconf libx11-dev libxext-dev あたりをインストールしておいてください。  
-RedHat 系の場合、yum で autoconf libXt-devel libXaw-devel あたりをインストールしておいてください。  
-ライブラリの名称やヘッダファイルの格納先は SDLIM となりました。  
-コンパイル用の環境取得スクリプトも sdlim-config となります。  
+Debian 系の場合、autoconf libx11-dev libxext-dev あたりをインストールしておいてください。  
+RedHat 系の場合、autoconf libXt-devel libXaw-devel あたりをインストールしておいてください。  
+ライブラリの名称やヘッダファイルの格納先は SDLIM です。  
+コンパイル用の環境取得スクリプトは sdlim-config です。  
 
 ## 追加関数
 `char *SDL_SetIMValues(SDL_imvalue value, ...);`  
