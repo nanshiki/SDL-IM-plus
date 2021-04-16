@@ -297,8 +297,10 @@ static void handle_keyboard(const int numevents, DIDEVICEOBJECTDATA *keybuf)
 
 	while(PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
 		if(GetMessage(&msg, NULL, 0, 0) > 0) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if(msg.message != WM_SYSKEYDOWN && msg.message != WM_SYSKEYUP) {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
 	}
 
@@ -781,7 +783,9 @@ static int DX5_CheckInput(_THIS, int timeout, BOOL processInput)
 		if ( GetMessage(&msg, NULL, 0, 0) > 0 ) {
 #ifdef ENABLE_IM_EVENT
 			if (IM_Context.bEnable) {
-				TranslateMessage( &msg ); /* for IME */
+				if(msg.message != WM_SYSKEYDOWN && msg.message != WM_SYSKEYUP) {
+					TranslateMessage( &msg ); /* for IME */
+				}
 			}
 #endif
 			DispatchMessage(&msg);
