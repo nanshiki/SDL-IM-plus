@@ -1368,8 +1368,9 @@ static void free_ime()
 static int setup_ime(_THIS, Uint32 flags)
 {
 	init_ime();
-
 	IM_Context.video_flags = flags;
+
+	SendMessage(SDL_Window, WM_IME_SETCONTEXT, TRUE, ISC_SHOWUIALL);
 
 	return 1;
 }

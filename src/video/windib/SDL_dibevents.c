@@ -72,7 +72,9 @@ static WNDPROCTYPE userWindowProc = NULL;
 int DIB_HandleComposition(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 /* data field required by DIB_HandleComposition */
 static COMPOSITIONFORM form;
+extern Uint32 end_ticks;
 extern wchar_t CompositionFontName[LF_FACESIZE];
+#define IME_END_CR_WAIT  50
 #endif
 
 #ifdef SDL_VIDEO_DRIVER_GAPI
@@ -222,8 +224,15 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 				}
 			}
 #endif /* NO_GETKEYBOARDSTATE */
-			posted = SDL_PrivateKeyboard(SDL_PRESSED,
-				TranslateKey(wParam,HIWORD(lParam),&keysym,1));
+			{
+				SDL_keysym *key =  TranslateKey(wParam,HIWORD(lParam),&keysym,1);
+#ifdef ENABLE_IM_EVENT
+				if (!IM_Context.bCompos && (GetTickCount() - end_ticks > IME_END_CR_WAIT || key->sym != 0x0d))
+#endif
+				{
+					posted = SDL_PrivateKeyboard(SDL_PRESSED,key);
+				}
+			}
 		}
 		return(0);
 
@@ -301,6 +310,7 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 		/* Fall through to default processing */
 #endif /* SC_SCREENSAVE && SC_MONITORPOWER */
 
+#ifdef ENABLE_IM_EVENT
 		case WM_INPUTLANGCHANGE:
 			SendMessage(hwnd, WM_IME_NOTIFY, wParam, lParam);
 			FLIP_BREAK;
@@ -317,6 +327,7 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 			//FLIP_BREAK;
 		case WM_IME_ENDCOMPOSITION:
+			end_ticks = GetTickCount();
 			IM_Context.bCompos = 0;
 			FLIP_BREAK;
 		case WM_IME_NOTIFY:
@@ -353,7 +364,7 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 				FLIP_BREAK;
 			}
 			break;
-
+#endif
 		default: {
 			/* Only post the event if we're watching for it */
 			if ( SDL_ProcessEvents[SDL_SYSWMEVENT] == SDL_ENABLE ) {
@@ -434,6 +445,13 @@ void DIB_PumpEvents(_THIS)
 
 	while ( PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE) ) {
 		if ( GetMessage(&msg, NULL, 0, 0) > 0 ) {
+#ifdef ENABLE_IM_EVENT
+			if (IM_Context.bEnable) {
+				if(msg.message != WM_SYSKEYDOWN && msg.message != WM_SYSKEYUP) {
+					TranslateMessage( &msg ); /* for IME */
+				}
+			}
+#endif
 			DispatchMessage(&msg);
 		}
 	}
