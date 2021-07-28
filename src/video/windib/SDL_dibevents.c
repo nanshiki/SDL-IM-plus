@@ -170,7 +170,9 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 #endif 
 			/* Ignore repeated keys */
 			if ( lParam&REPEATED_KEYMASK ) {
-				return(0);
+				if(((lParam >> 16) & 0xff) != 0x70) {
+					return(0);
+				}
 			}
 			switch (wParam) {
 				case VK_CONTROL:
@@ -250,6 +252,9 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 				wParam = rotateKey(wParam, this->hidden->gapiInfo->coordinateTransform);
 			}
 #endif
+			if(((lParam >> 16) & 0xff) == 0x70) {
+				return 0;
+			}
 
 			switch (wParam) {
 				case VK_CONTROL:
