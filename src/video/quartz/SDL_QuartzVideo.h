@@ -83,6 +83,7 @@
 /* use this to get the CGLContext; it handles Cocoa interface changes. */
 CGLContextObj QZ_GetCGLContextObj(NSOpenGLContext *nsctx);
 
+@class SDLTranslatorResponder;
 
 /* Main driver structure to store required state information */
 typedef struct SDL_PrivateVideoData {
@@ -91,7 +92,9 @@ typedef struct SDL_PrivateVideoData {
     CGDirectDisplayID  display;            /* 0 == main display (only support single display) */
     const void         *mode;              /* current mode of the display */
     const void         *save_mode;         /* original mode of the display */
+#if (MAC_OS_X_VERSION_MIN_REQUIRED < 1070)
     CGDirectPaletteRef palette;            /* palette of an 8-bit display */
+#endif
     NSOpenGLContext    *gl_context;        /* OpenGL rendering context */
     NSGraphicsContext  *nsgfx_context;     /* Cocoa graphics context */
     Uint32             width, height, bpp; /* frequently used data about the display */
@@ -107,7 +110,7 @@ typedef struct SDL_PrivateVideoData {
     SDL_Rect           **client_mode_list; /* resolution list to pass back to client */
     SDLKey             keymap[256];        /* Mac OS X to SDL key mapping */
     Uint32             current_mods;       /* current keyboard modifiers, to track modifier state */
-    NSText             *field_edit;        /* a field editor for keyboard composition processing */
+    SDLTranslatorResponder *field_edit;        /* a field editor for keyboard composition processing */
     Uint32             last_virtual_button;/* last virtual mouse button pressed */
     io_connect_t       power_connection;   /* used with IOKit to detect wake from sleep */
     Uint8              expect_mouse_up;    /* used to determine when to send mouse up events */
@@ -122,6 +125,7 @@ typedef struct SDL_PrivateVideoData {
     BOOL               quit_thread;        /* used to quit the async blitting thread */
     SInt32             system_version;     /* used to dis-/enable workarounds depending on the system version */
 
+    BOOL               ime_enable;
     void *opengl_library;    /* dynamically loaded OpenGL library. */
 } SDL_PrivateVideoData;
 
@@ -166,6 +170,7 @@ typedef struct SDL_PrivateVideoData {
 #define quit_thread (this->hidden->quit_thread)
 #define system_version (this->hidden->system_version)
 #define opengl_library (this->hidden->opengl_library)
+#define ime_enable (this->hidden->ime_enable)
 
 /* grab states - the input is in one of these states */
 enum {
@@ -227,3 +232,9 @@ void         QZ_PrivateCocoaToSDL (_THIS, NSPoint *p);
 BOOL         QZ_IsMouseInWindow (_THIS);
 void         QZ_DoActivate (_THIS);
 void         QZ_DoDeactivate (_THIS);
+
+int QZ_SetIMPosition(_THIS, int x, int y);
+char *QZ_SetIMValues(_THIS, SDL_imvalue value, int alt);
+char *QZ_GetIMValues(_THIS, SDL_imvalue value, int *alt);
+int QZ_FlushIMString(_THIS, void *buffer);
+

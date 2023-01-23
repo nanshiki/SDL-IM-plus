@@ -77,14 +77,225 @@ static inline void QZ_SetFrame(_THIS, NSScreen *nsscreen, NSRect frame)
 }
 #endif
 
-@interface SDLTranslatorResponder : NSTextView
+#define SJIS_LENGTH 80
+
+@interface IMETextView : NSView
+@property (nonatomic, copy) NSAttributedString *text;
+@end
+
+@implementation IMETextView
+- (void)drawRect:(NSRect)dirtyRect
 {
+    [super drawRect:dirtyRect];
+    CGSize size = [_text size];
+    [[NSColor whiteColor] set];
+    NSRectFill(dirtyRect);
+    [_text drawInRect:CGRectMake(0, 0, size.width, size.height)];
 }
-- (void) doCommandBySelector:(SEL)myselector;
+@end
+
+@interface SDLTranslatorResponder : NSView <NSTextInputClient> {
+    NSString *_markedText;
+    NSRange   _markedRange;
+    NSRange   _selectedRange;
+    SDL_Rect  _inputRect;
+    IMETextView *_markedLabel;
+    char _textSJIS[SJIS_LENGTH];
+    SDL_Event event_keydown;
+}
+- (void)doCommandBySelector:(SEL)myselector;
+- (void)setInputXY:(int)x y:(int)y;
+- (void)setFontHeight:(int)h;
+- (int)getFontHeight;
+- (int)getTextLength;
 @end
 
 @implementation SDLTranslatorResponder
-- (void) doCommandBySelector:(SEL) myselector {}
+- (void)setFontHeight:(int)h
+{
+    _inputRect.h = h;
+}
+
+- (int)getFontHeight
+{
+    return _inputRect.h;
+}
+
+- (int)getTextLength
+{
+    if(_textSJIS) {
+        return strlen(_textSJIS);
+    }
+    return 0;
+}
+
+- (char *)getText
+{
+    return _textSJIS;
+}
+
+- (void)setInputXY:(int)x y:(int)y
+{
+    _inputRect.x = x;
+    _inputRect.y = y;
+}
+
+- (void)insertText:(id)aString replacementRange:(NSRange)replacementRange
+{
+    /* TODO: Make use of replacementRange? */
+
+    char *sjis;
+    /* Could be NSString or NSAttributedString, so we have
+     * to test and convert it before return as SDL event */
+    if ([aString isKindOfClass: [NSAttributedString class]]) {
+        sjis = [[aString string] cStringUsingEncoding:NSShiftJISStringEncoding];
+    } else {
+        sjis = [aString cStringUsingEncoding:NSShiftJISStringEncoding];
+    }
+    strncpy(_textSJIS, sjis, SJIS_LENGTH);
+    _textSJIS[SJIS_LENGTH - 1] = 0;
+
+    event_keydown.type = SDL_KEYDOWN;
+    SDL_PushEvent(&event_keydown);
+
+    [_markedLabel setHidden:YES];
+    _markedLabel.text = nil;
+}
+
+- (void)doCommandBySelector:(SEL)myselector
+{
+    /* No need to do anything since we are not using Cocoa
+       selectors to handle special keys, instead we use SDL
+       key events to do the same job.
+    */
+}
+/*
+- (BOOL) acceptsFirstResponder {
+    return YES;
+}
+*/
+- (BOOL)hasMarkedText
+{
+    return _markedText != nil;
+}
+
+- (NSRange)markedRange
+{
+    return _markedRange;
+}
+
+- (NSRange)selectedRange
+{
+    return _selectedRange;
+}
+
+- (void)setMarkedText:(id)aString selectedRange:(NSRange)selectedRange replacementRange:(NSRange)replacementRange
+{
+    if ([aString isKindOfClass:[NSAttributedString class]]) {
+        [aString addAttribute:NSFontAttributeName value:[NSFont systemFontOfSize:_inputRect.h] range:NSMakeRange(0, [aString length])];
+        _markedLabel.text = aString;
+        CGSize size = [aString size];
+        [_markedLabel setFrameSize:size];
+        [_markedLabel setHidden:NO];
+        [_markedLabel setNeedsDisplay:YES];
+
+        aString = [aString string];
+    }
+
+    if ([aString length] == 0) {
+        [self unmarkText];
+        return;
+    }
+
+    if (_markedText != aString) {
+        [_markedText release];
+        _markedText = [aString retain];
+    }
+
+    _selectedRange = selectedRange;
+    _markedRange = NSMakeRange(0, [aString length]);
+}
+
+- (void)unmarkText
+{
+    [_markedText release];
+    _markedText = nil;
+
+    [_markedLabel setHidden:YES];
+}
+
+extern int GetEnableIME();
+
+- (void)keyboardInputSourceChanged:(NSNotification *)notification
+{
+    if(!GetEnableIME()) {
+        [_markedLabel setHidden:YES];
+        [[NSTextInputContext currentInputContext] discardMarkedText];
+    }
+}
+
+- (NSRect)firstRectForCharacterRange:(NSRange)aRange actualRange:(NSRangePointer)actualRange
+{
+    NSWindow *window = [self window];
+    NSRect contentRect = [window contentRectForFrameRect:[window frame]];
+    float windowHeight = contentRect.size.height;
+    NSRect rect = NSMakeRect(_inputRect.x, windowHeight - _inputRect.y,
+                             _inputRect.w, 0);
+
+    if (actualRange) {
+        *actualRange = aRange;
+    }
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1070
+    if (![window respondsToSelector:@selector(convertRectToScreen:)]) {
+        rect.origin = [window convertBaseToScreen:rect.origin];
+    } else
+#endif
+    {
+        rect = [window convertRectToScreen:rect];
+    }
+
+    if(_markedLabel == nil) {
+        _markedLabel = [[IMETextView alloc] initWithFrame: NSMakeRect(0.0, 0.0, 0.0, 0.0)];
+        [[[self window] contentView] addSubview:_markedLabel];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(keyboardInputSourceChanged:)
+                                                     name:NSTextInputContextKeyboardSelectionDidChangeNotification
+                                                   object:nil];
+    }
+    [_markedLabel setFrameOrigin: NSMakePoint(_inputRect.x, windowHeight - _inputRect.y)];
+
+    return rect;
+}
+
+- (NSAttributedString *)attributedSubstringForProposedRange:(NSRange)aRange actualRange:(NSRangePointer)actualRange
+{
+    return nil;
+}
+
+- (NSInteger)conversationIdentifier
+{
+    return (NSInteger) self;
+}
+
+/* This method returns the index for character that is
+ * nearest to thePoint.  thPoint is in screen coordinate system.
+ */
+- (NSUInteger)characterIndexForPoint:(NSPoint)thePoint
+{
+    return 0;
+}
+
+/* This method is the key to attribute extension.
+ * We could add new attributes through this method.
+ * NSInputServer examines the return value of this
+ * method & constructs appropriate attributed string.
+ */
+- (NSArray *)validAttributesForMarkedText
+{
+    return [NSArray array];
+}
+
 @end
 
 /* absent in 10.3.9.  */
@@ -232,6 +443,12 @@ static SDL_VideoDevice* QZ_CreateDevice (int device_index)
      */
     /*device->CreateYUVOverlay = QZ_CreateYUVOverlay;*/
 
+    device->SetIMPosition = QZ_SetIMPosition;
+    device->SetIMValues = QZ_SetIMValues;
+    device->GetIMValues = QZ_GetIMValues;
+    device->FlushIMString = QZ_FlushIMString;
+    //device->GetIMInfo = WIN_GetIMInfo;
+
     device->free             = QZ_DeleteDevice;
 
     return device;
@@ -315,11 +532,11 @@ static int QZ_VideoInit (_THIS, SDL_PixelFormat *video_format)
     env = getenv("SDL_VIDEO_FULLSCREEN_DISPLAY");
     if ( env ) {
         int monitor = SDL_atoi(env);
-    	CGDirectDisplayID activeDspys [3];
-    	CGDisplayCount dspyCnt;
-    	CGGetActiveDisplayList (3, activeDspys, &dspyCnt);
+        CGDirectDisplayID activeDspys [3];
+        CGDisplayCount dspyCnt;
+        CGGetActiveDisplayList (3, activeDspys, &dspyCnt);
         if ( monitor >= 0 && monitor < dspyCnt ) {
-    	    display_id = activeDspys[monitor];
+            display_id = activeDspys[monitor];
         }
     }
 #endif
@@ -380,11 +597,12 @@ static int QZ_VideoInit (_THIS, SDL_PixelFormat *video_format)
     cursor_should_be_visible    = YES;
     cursor_visible              = YES;
     current_mods = 0;
-    field_edit =  [[SDLTranslatorResponder alloc] initWithFrame:r];
+    //field_edit =  [[SDLTranslatorResponder alloc] initWithFrame:r];
+    ime_enable = NO;
 
     /* register for sleep notifications so wake from sleep generates SDL_VIDEOEXPOSE */
     QZ_RegisterForSleepNotifications (this);
-    
+
     /* Fill in some window manager capabilities */
     this->info.wm_available = 1;
 
@@ -552,7 +770,7 @@ static void QZ_UnsetVideoMode (_THIS, BOOL to_desktop, BOOL save_gl)
         CGContextRelease (cg_context);
         cg_context = nil;
     }
-    
+
     /* Release fullscreen resources */
     if ( mode_flags & SDL_FULLSCREEN ) {
 
@@ -699,7 +917,7 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
     if ( CGAcquireDisplayFadeReservation (5, &fade_token) == kCGErrorSuccess ) {
         CGDisplayFade (fade_token, 0.3, kCGDisplayBlendNormal, kCGDisplayBlendSolidColor, 0.0, 0.0, 0.0, TRUE);
     }
-    
+
     /* Destroy any previous mode */
     if (video_set == SDL_TRUE)
         QZ_UnsetVideoMode (this, FALSE, save_gl);
@@ -726,7 +944,7 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
         error = CGDisplayCapture (display_id);
     else
         error = CGCaptureAllDisplays ();
-        
+
     if ( CGDisplayNoErr != error ) {
         SDL_SetError ("Failed capturing display");
         goto ERR_NO_CAPTURE;
@@ -753,19 +971,18 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
 
         /* Setup double-buffer emulation */
         if ( flags & SDL_DOUBLEBUF ) {
-        
             /*
             Setup a software backing store for reasonable results when
             double buffering is requested (since a single-buffered hardware
             surface looks hideous).
-            
+
             The actual screen blit occurs in a separate thread to allow 
             other blitting while waiting on the VBL (and hence results in higher framerates).
             */
             this->LockHWSurface = NULL;
             this->UnlockHWSurface = NULL;
             this->UpdateRects = NULL;
-        
+
             current->flags |= (SDL_HWSURFACE|SDL_DOUBLEBUF);
             this->UpdateRects = QZ_DoubleBufferUpdate;
             this->LockHWSurface = QZ_LockDoubleBuffer;
@@ -777,10 +994,10 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
                 SDL_OutOfMemory ();
                 goto ERR_DOUBLEBUF;
             }
-        
+
             sw_buffers[0] = current->pixels;
             sw_buffers[1] = (Uint8*)current->pixels + current->pitch * current->h;
-        
+
             quit_thread = NO;
             sem1 = SDL_CreateSemaphore (0);
             sem2 = SDL_CreateSemaphore (1);
@@ -852,7 +1069,7 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
             [ qz_window setLevel:NSNormalWindowLevel ];
             ctx = QZ_GetCGLContextObj (gl_context);
             err = CGLSetFullScreen (ctx);
-    
+
             if (err) {
                 SDL_SetError ("Error setting OpenGL fullscreen: %s", CGLErrorString(err));
                 goto ERR_NO_GL;
@@ -882,12 +1099,12 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
         cgColorspace = CGColorSpaceCreateDeviceRGB();
         current->pitch = 4 * current->w;
         current->pixels = SDL_malloc (current->h * current->pitch);
-        
+
         cg_context = CGBitmapContextCreate (current->pixels, current->w, current->h,
                         8, current->pitch, cgColorspace,
                         kCGImageAlphaNoneSkipFirst);
         CGColorSpaceRelease (cgColorspace);
-        
+
         current->flags |= SDL_SWSURFACE;
         current->flags |= SDL_ASYNCBLIT;
         current->hwdata = (void *) cg_context;
@@ -940,6 +1157,10 @@ static SDL_Surface* QZ_SetVideoFullScreen (_THIS, SDL_Surface *current, int widt
     /* Set app state, hide cursor if necessary, ... */
     QZ_DoActivate(this);
 
+    [ window_view setNeedsDisplay:YES ];
+    [ [ qz_window contentView ] setNeedsDisplay:YES ];
+    [ qz_window displayIfNeeded ];
+
     return current;
 
     /* Since the blanking window covers *all* windows (even force quit) correct recovery is crucial */
@@ -967,7 +1188,7 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
     current->flags = 0;
     current->w = width;
     current->h = height;
-    
+
     contentRect = NSMakeRect (0, 0, width, height);
 
     /*
@@ -992,7 +1213,7 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
             QZ_UnsetVideoMode (this, TRUE, save_gl);
         }
     }
-    
+
     /* Sorry, QuickDraw was ripped out. */
     if (getenv("SDL_NSWindowPointer") || getenv("SDL_NSQuickDrawViewPointer")) {
         SDL_SetError ("Embedded QuickDraw windows are no longer supported");
@@ -1005,7 +1226,6 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
 
     /* Check if we should recreate the window */
     if (qz_window == nil) {
-    
         /* Set the window style based on input flags */
         if ( flags & SDL_NOFRAME ) {
             style = NSBorderlessWindowMask;
@@ -1025,7 +1245,7 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
                 styleMask:style 
                     backing:NSBackingStoreBuffered
                         defer:NO ];
-                          
+
         if (qz_window == nil) {
             SDL_SetError ("Could not create the Cocoa window");
             if (fade_token != kCGDisplayFadeReservationInvalidToken) {
@@ -1074,6 +1294,18 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
 
         window_view = [ [ NSView alloc ] initWithFrame:contentRect ];
         [ window_view setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable ];
+
+        NSRect contentRectOrig = NSMakeRect (0, 0, width, height);
+
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 101500
+        /* OpenGL in Catalina apparently wants to match pixels on Retina displays. Without this the OpenGL
+           display will only use 1/4th the display in the lower left corner. This seems to be an API issue
+           with XCode as binaries previously compiled on Mojave don't have this issue on Catalina. */
+        contentRectOrig = [ window_view convertRectFromBacking:contentRectOrig ];
+#endif
+
+        [ window_view setBoundsSize: contentRectOrig.size ];
+
         [ [ qz_window contentView ] addSubview:window_view ];
         [ gl_context setView: window_view ];
         [ window_view release ];
@@ -1087,23 +1319,22 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
 
         /* Only recreate the view if it doesn't already exist */
         if (window_view == nil) {
-        
             window_view = [ [ NSView alloc ] initWithFrame:contentRect ];
             [ window_view setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable ];
             [ [ qz_window contentView ] addSubview:window_view ];
             [ window_view release ];
             [ qz_window makeKeyAndOrderFront:nil ];
         }
-        
+
         cgColorspace = CGColorSpaceCreateDeviceRGB();
         current->pitch = 4 * current->w;
         current->pixels = SDL_malloc (current->h * current->pitch);
-        
+
         cg_context = CGBitmapContextCreate (current->pixels, current->w, current->h,
                         8, current->pitch, cgColorspace,
                         kCGImageAlphaNoneSkipFirst);
         CGColorSpaceRelease (cgColorspace);
-        
+
         current->flags |= SDL_SWSURFACE;
         current->flags |= SDL_ASYNCBLIT;
         current->hwdata = (void *) cg_context;
@@ -1115,6 +1346,10 @@ static SDL_Surface* QZ_SetVideoWindowed (_THIS, SDL_Surface *current, int width,
 
     /* Save flags to ensure correct teardown */
     mode_flags = current->flags;
+
+    [ window_view setNeedsDisplay:YES ];
+    [ [ qz_window contentView ] setNeedsDisplay:YES ];
+    [ qz_window displayIfNeeded ];
 
     /* Fade in again (asynchronously) if we came from a fullscreen mode and faded to black */
     if (fade_token != kCGDisplayFadeReservationInvalidToken) {
@@ -1155,7 +1390,13 @@ static SDL_Surface* QZ_SetVideoModeInternal (_THIS, SDL_Surface *current,
 
     if (qz_window != nil) {
         nsgfx_context = [NSGraphicsContext graphicsContextWithWindow:qz_window];
-        [NSGraphicsContext setCurrentContext:nsgfx_context];
+        if (nsgfx_context != NULL) {
+            [NSGraphicsContext setCurrentContext:nsgfx_context];
+        }
+        else {
+            /* Whoops, looks like Mojave doesn't support this anymore */
+            fprintf(stderr,"Unable to obtain graphics context for NSWindow (Mojave behavior)\n");
+        }
     }
 
     /* Setup the new pixel format */
@@ -1287,9 +1528,9 @@ static AbsoluteTime QZ_SecondsToAbsolute ( double seconds )
         UInt64 i;
         Nanoseconds ns;
     } temp;
-        
+
     temp.i = seconds * 1000000000.0;
-    
+
     return NanosecondsToAbsolute ( temp.ns );
 }
 
@@ -1297,7 +1538,7 @@ static int QZ_ThreadFlip (_THIS)
 {
     Uint8 *src, *dst;
     int skip, len, h;
-    
+
     /*
         Give this thread the highest scheduling priority possible,
         in the hopes that it will immediately run after the VBL delay
@@ -1306,114 +1547,109 @@ static int QZ_ThreadFlip (_THIS)
         pthread_t current_thread;
         int policy;
         struct sched_param param;
-        
+
         current_thread = pthread_self ();
         pthread_getschedparam (current_thread, &policy, &param);
         policy = SCHED_RR;
         param.sched_priority = sched_get_priority_max (policy);
         pthread_setschedparam (current_thread, policy, &param);
     }
-    
+
     while (1) {
-    
         SDL_SemWait (sem1);
         if (quit_thread)
             return 0;
-                
+
         /*
          * We have to add SDL_VideoSurface->offset here, since we might be a
          *  smaller surface in the center of the framebuffer (you asked for
          *  a fullscreen resolution smaller than the hardware could supply
          *  so SDL is centering it in a bigger resolution)...
          */
-        dst = ((Uint8 *)((size_t)CGDisplayBaseAddress (display_id))) + SDL_VideoSurface->offset;
+        dst = (unsigned char *)CGDisplayBaseAddress(display_id) + SDL_VideoSurface->offset;
         src = current_buffer + SDL_VideoSurface->offset;
         len = SDL_VideoSurface->w * SDL_VideoSurface->format->BytesPerPixel;
         h = SDL_VideoSurface->h;
         skip = SDL_VideoSurface->pitch;
-    
+
         /* Wait for the VBL to occur (estimated since we don't have a hardware interrupt) */
         {
-            
             /* The VBL delay is based on Ian Ollmann's RezLib <iano@cco.caltech.edu> */
             double refreshRate;
             double linesPerSecond;
             double target;
             double position;
             double adjustment;
-            AbsoluteTime nextTime;        
+            AbsoluteTime nextTime;
             CFNumberRef refreshRateCFNumber;
-            
+
             refreshRateCFNumber = CFDictionaryGetValue (mode, kCGDisplayRefreshRate);
             if ( NULL == refreshRateCFNumber ) {
                 SDL_SetError ("Mode has no refresh rate");
                 goto ERROR;
             }
-            
+
             if ( 0 == CFNumberGetValue (refreshRateCFNumber, kCFNumberDoubleType, &refreshRate) ) {
                 SDL_SetError ("Error getting refresh rate");
                 goto ERROR;
             }
-            
+
             if ( 0 == refreshRate ) {
-               
                SDL_SetError ("Display has no refresh rate, using 60hz");
-                
+
                 /* ok, for LCD's we'll emulate a 60hz refresh, which may or may not look right */
                 refreshRate = 60.0;
             }
-            
+
             linesPerSecond = refreshRate * h;
             target = h;
-        
+
             /* Figure out the first delay so we start off about right */
             position = CGDisplayBeamPosition (display_id);
             if (position > target)
                 position = 0;
-            
+
             adjustment = (target - position) / linesPerSecond; 
-            
+
             nextTime = AddAbsoluteToAbsolute (UpTime (), QZ_SecondsToAbsolute (adjustment));
-        
+
             MPDelayUntil (&nextTime);
         }
-        
-        
+
         /* On error, skip VBL delay */
         ERROR:
-        
+
         /* TODO: use CGContextDrawImage here too!  Create two CGContextRefs the same way we
            create two buffers, replace current_buffer with current_context and set it
            appropriately in QZ_FlipDoubleBuffer.  */
         while ( h-- ) {
-        
             SDL_memcpy (dst, src, len);
             src += skip;
             dst += skip;
         }
-        
+
         /* signal flip completion */
         SDL_SemPost (sem2);
     }
-    
+
     return 0;
 }
-        
+
 static int QZ_FlipDoubleBuffer (_THIS, SDL_Surface *surface)
 {
     /* wait for previous flip to complete */
     SDL_SemWait (sem2);
-    
+
     current_buffer = surface->pixels;
-        
+
     if (surface->pixels == sw_buffers[0])
         surface->pixels = sw_buffers[1];
     else
         surface->pixels = sw_buffers[0];
-    
+
     /* signal worker thread to do the flip */
     SDL_SemPost (sem1);
-    
+
     return 0;
 }
 
@@ -1473,46 +1709,51 @@ static void QZ_DrawResizeIcon (_THIS)
 {
     /* Check if we should draw the resize icon */
     if (SDL_VideoSurface->flags & SDL_RESIZABLE) {
-    
         SDL_Rect icon_rect;
-        
+
         /* Create the icon image */
         if (resize_icon == NULL) {
-        
             SDL_RWops *rw;
             SDL_Surface *tmp;
-            
+
             rw = SDL_RWFromConstMem (QZ_ResizeIcon, sizeof(QZ_ResizeIcon));
             tmp = SDL_LoadBMP_RW (rw, SDL_TRUE);
-                                                            
+
             resize_icon = SDL_ConvertSurface (tmp, SDL_VideoSurface->format, SDL_SRCCOLORKEY);
             SDL_SetColorKey (resize_icon, SDL_SRCCOLORKEY, 0xFFFFFF);
-            
+
             SDL_FreeSurface (tmp);
         }
-            
+
         icon_rect.x = SDL_VideoSurface->w - 13;
         icon_rect.y = SDL_VideoSurface->h - 13;
         icon_rect.w = 13;
         icon_rect.h = 13;
-            
+
         SDL_BlitSurface (resize_icon, NULL, SDL_VideoSurface, &icon_rect);
     }
 }
 
-static void QZ_UpdateRects (_THIS, int numRects, SDL_Rect *rects)
+static SDL_VideoDevice *last_this = NULL;
+
+void QZ_UpdateRectsOnDrawRect (/*TODO: NSRect from drawRect*/)
 {
+    SDL_VideoDevice *this = last_this; /* HACK */
+
+    if (this == NULL) return;
+    if (SDL_VideoSurface == NULL)
+        return;
+
     if (SDL_VideoSurface->flags & SDL_OPENGLBLIT) {
-        QZ_GL_SwapBuffers (this);
+        /* TODO? */
     }
     else if ( [ qz_window isMiniaturized ] ) {
-    
         /* Do nothing if miniaturized */
     }
-    
     else {
         NSGraphicsContext *ctx = [NSGraphicsContext currentContext];
-        if (ctx != nsgfx_context) { /* uhoh, you might be rendering from another thread... */
+        /* NTS: nsgfx_context == NULL will occur on Mojave, may be non-NULL on older versions of OS X */
+        if (nsgfx_context != NULL && ctx != nsgfx_context) { /* uhoh, you might be rendering from another thread... */
             [NSGraphicsContext setCurrentContext:nsgfx_context];
             ctx = nsgfx_context;
         }
@@ -1521,10 +1762,28 @@ static void QZ_UpdateRects (_THIS, int numRects, SDL_Rect *rects)
         CGContextFlush (cg_context);
         CGImageRef image = CGBitmapContextCreateImage (cg_context);
         CGRect rectangle = CGRectMake (0,0,[window_view frame].size.width,[window_view frame].size.height);
-        
+
         CGContextDrawImage (cgc, rectangle, image);
         CGImageRelease(image);
         CGContextFlush (cgc);
+    }
+}
+
+static void QZ_UpdateRects (_THIS, int numRects, SDL_Rect *rects)
+{
+    last_this = this; /* HACK */
+
+    if (SDL_VideoSurface->flags & SDL_OPENGLBLIT) {
+        QZ_GL_SwapBuffers (this);
+        /* TODO? */
+    }
+    else if ( [ qz_window isMiniaturized ] ) {
+        /* Do nothing if miniaturized */
+    }
+    else {
+        [ window_view setNeedsDisplay:YES ];
+        [ [ qz_window contentView ] setNeedsDisplay:YES ];
+        [ qz_window displayIfNeeded ];
     }
 }
 
@@ -1538,7 +1797,7 @@ static void QZ_VideoQuit (_THIS)
     /* Ensure the cursor will be visible and working when we quit */
     CGDisplayShowCursor (display_id);
     CGAssociateMouseAndMouseCursorPosition (1);
-    
+
     if (mode_flags & SDL_FULLSCREEN) {
         /* Fade to black to hide resolution-switching flicker (and garbage
            that is displayed by a destroyed OpenGL context, if applicable) */
@@ -1635,7 +1894,11 @@ int QZ_GetGamma (_THIS, float *red, float *green, float *blue)
 
 int QZ_SetGammaRamp (_THIS, Uint16 *ramp)
 {
-    const uint32_t tableSize = 255;
+    /* These no longer work on Mac OS X, and crash on some drivers (Intel HD
+        4000 on Mac OS X 10.9, for example). */
+    return -1;
+#if 0
+    const uint32_t tableSize = 256;
     CGGammaValue redTable[tableSize];
     CGGammaValue greenTable[tableSize];
     CGGammaValue blueTable[tableSize];
@@ -1644,24 +1907,29 @@ int QZ_SetGammaRamp (_THIS, Uint16 *ramp)
 
     /* Extract gamma values into separate tables, convert to floats between 0.0 and 1.0 */
     for (i = 0; i < 256; i++)
-        redTable[i % 256] = ramp[i] / 65535.0;
+        redTable[i % tableSize] = ramp[i] / 65535.0;
 
     for (i=256; i < 512; i++)
-        greenTable[i % 256] = ramp[i] / 65535.0;
+        greenTable[i % tableSize] = ramp[i] / 65535.0;
 
     for (i=512; i < 768; i++)
-        blueTable[i % 256] = ramp[i] / 65535.0;
+        blueTable[i % tableSize] = ramp[i] / 65535.0;
 
     if ( CGDisplayNoErr == CGSetDisplayTransferByTable
          (display_id, tableSize, redTable, greenTable, blueTable) )
         return 0;
     else
         return -1;
+#endif
 }
 
 int QZ_GetGammaRamp (_THIS, Uint16 *ramp)
 {
-    const uint32_t tableSize = 255;
+    /* These no longer work on Mac OS X, and crash on some drivers (Intel HD
+        4000 on Mac OS X 10.9, for example). */
+    return -1;
+#if 0
+    const uint32_t tableSize = 256;
     CGGammaValue redTable[tableSize];
     CGGammaValue greenTable[tableSize];
     CGGammaValue blueTable[tableSize];
@@ -1676,14 +1944,15 @@ int QZ_GetGammaRamp (_THIS, Uint16 *ramp)
 
     /* Pack tables into one array, with values from 0 to 65535 */
     for (i = 0; i < 256; i++)
-        ramp[i] = redTable[i % 256] * 65535.0;
+        ramp[i] = redTable[i % tableSize] * 65535.0;
 
     for (i=256; i < 512; i++)
-        ramp[i] = greenTable[i % 256] * 65535.0;
+        ramp[i] = greenTable[i % tableSize] * 65535.0;
 
     for (i=512; i < 768; i++)
-        ramp[i] = blueTable[i % 256] * 65535.0;
+        ramp[i] = blueTable[i % tableSize] * 65535.0;
 
     return 0;
+#endif
 }
 
