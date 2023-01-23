@@ -219,6 +219,10 @@ typedef struct SDL_SysWMinfo {
 	int data;
 } SDL_SysWMinfo;
 
+typedef struct SDL_SysIMinfo {
+	SDL_version version;
+} SDL_SysIMinfo;
+
 #endif /* video driver type */
 
 #endif /* SDL_PROTOTYPES_ONLY */
