@@ -8,7 +8,7 @@ SDL-1.2 [README](https://github.com/nanshiki/SDL-IM-plus/blob/master/README)
 
 ## ƒrƒ‹ƒh
 ### Windows  
-Visual Studio 2015 ‚Å VisualC/SDL.sln ‚ğ“Ç‚İ‚İAƒrƒ‹ƒh‚µ‚Ä‚­‚¾‚³‚¢B  
+Visual Studio ‚Ì 2015 ˆÈ~‚Å VisualC/SDL.sln ‚ğ“Ç‚İ‚İAƒrƒ‹ƒh‚µ‚Ä‚­‚¾‚³‚¢B  
 
 ### Linux  
 $ ./autogen.sh  
@@ -20,6 +20,17 @@ Debian Œn‚Ìê‡Aautoconf libx11-dev libxext-dev ‚ ‚½‚è‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚Ä‚
 RedHat Œn‚Ìê‡Aautoconf libXt-devel libXaw-devel ‚ ‚½‚è‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚Ä‚­‚¾‚³‚¢B  
 ƒ‰ƒCƒuƒ‰ƒŠ‚Ì–¼Ì‚âƒwƒbƒ_ƒtƒ@ƒCƒ‹‚ÌŠi”[æ‚Í SDLIM ‚Å‚·B  
 ƒRƒ“ƒpƒCƒ‹—p‚ÌŠÂ‹«æ“¾ƒXƒNƒŠƒvƒg‚Í sdlim-config ‚Å‚·B  
+
+### macOS  
+$ ./autogen.sh  
+$ ./configure --disable-video-x11  
+$ make  
+$ sudo make install  
+Xcode, Command line tools for Xcode ‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚Ä‚­‚¾‚³‚¢B  
+Homebrew ‚Å autoconf ‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚Ä‰º‚³‚¢B  
+ƒ‰ƒCƒuƒ‰ƒŠ‚Ì–¼Ì‚âƒwƒbƒ_ƒtƒ@ƒCƒ‹‚ÌŠi”[æ‚Í SDLIM ‚Å‚·B  
+ƒRƒ“ƒpƒCƒ‹—p‚ÌŠÂ‹«æ“¾ƒXƒNƒŠƒvƒg‚Í sdlim-config ‚Å‚·B  
+
 
 ## ’Ç‰ÁŠÖ”
 `char *SDL_SetIMValues(SDL_imvalue value, ...);`  
