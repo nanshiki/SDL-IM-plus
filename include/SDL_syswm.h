@@ -31,6 +31,12 @@
 #include "SDL_error.h"
 #include "SDL_version.h"
 
+#if defined(SDL_VIDEO_DRIVER_WINDIB) || defined(SDL_VIDEO_DRIVER_DDRAW) || defined(SDL_VIDEO_DRIVER_GAPI)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <imm.h>
+#endif
+
 #include "begin_code.h"
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
@@ -139,9 +145,6 @@ typedef struct SDL_SysWMinfo {
 } SDL_SysWMinfo;
 
 #elif defined(SDL_VIDEO_DRIVER_WINDIB) || defined(SDL_VIDEO_DRIVER_DDRAW) || defined(SDL_VIDEO_DRIVER_GAPI)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <imm.h>
 
 /** The windows custom event structure */
 struct SDL_SysWMmsg {
