@@ -653,7 +653,7 @@ LRESULT DX5_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 				if(wParam == VK_PROCESSKEY) {
 					WPARAM vkey = ImmGetVirtualKey(hwnd);
 					if(vkey != VK_PROCESSKEY) {
-						keybd_event(vkey, (lParam >> 16) & 0xff, 0, 0);
+						keybd_event((BYTE)vkey, (lParam >> 16) & 0xff, 0, 0);
 					}
 				}
 			}

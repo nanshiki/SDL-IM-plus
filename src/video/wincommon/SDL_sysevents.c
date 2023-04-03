@@ -817,6 +817,7 @@ void SDL_UnregisterApp()
 #ifndef NO_GETKEYBOARDSTATE
 #ifndef _WIN64
 /* JFP: Implementation of ToUnicode() that works on 9x/ME/2K/XP */
+#pragma warning(disable:4996)
 
 static int Is9xME()
 {

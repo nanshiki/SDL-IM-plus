@@ -47,6 +47,7 @@ static void DX5_WaitDone(_THIS);
 static void DX5_CloseAudio(_THIS);
 
 /* Audio driver bootstrap functions */
+#pragma warning(disable:4996)
 
 static int Audio_Available(void)
 {
