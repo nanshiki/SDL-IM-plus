@@ -114,7 +114,7 @@ static OSStatus     audioCallback (void                            *inRefCon,
         }
         return 0;
     }
-    
+
     /* No SDL conversion should be needed here, ever, since we accept
        any input format in OpenAudio, and leave the conversion to CoreAudio.
      */
@@ -132,12 +132,11 @@ static OSStatus     audioCallback (void                            *inRefCon,
                 /* Generate the data */
                 SDL_memset(buffer, this->spec.silence, bufferSize);
                 SDL_mutexP(this->mixer_lock);
-                (*this->spec.callback)(this->spec.userdata,
-                            buffer, bufferSize);
+                (*this->spec.callback)(this->spec.userdata, buffer, bufferSize);
                 SDL_mutexV(this->mixer_lock);
                 bufferOffset = 0;
             }
-        
+
             len = bufferSize - bufferOffset;
             if (len > remaining)
                 len = remaining;
@@ -193,12 +192,12 @@ void Core_CloseAudio(_THIS)
         return;
     }
 
-    result = CloseComponent(outputAudioUnit);
+    result = AudioComponentInstanceDispose_fn (outputAudioUnit);
     if (result != noErr) {
         SDL_SetError("Core_CloseAudio: CloseComponent");
         return;
     }
-    
+
     SDL_free(buffer);
 }
 
@@ -208,12 +207,11 @@ void Core_CloseAudio(_THIS)
         return -1; \
     }
 
-
 int Core_OpenAudio(_THIS, SDL_AudioSpec *spec)
 {
     OSStatus result = noErr;
-    Component comp;
-    ComponentDescription desc;
+    AudioComponent_t comp;
+    AudioComponentDesc_t desc;
     struct AURenderCallbackStruct callback;
     AudioStreamBasicDescription requestedDesc;
 
@@ -222,7 +220,7 @@ int Core_OpenAudio(_THIS, SDL_AudioSpec *spec)
     requestedDesc.mFormatFlags = kLinearPCMFormatFlagIsPacked;
     requestedDesc.mChannelsPerFrame = spec->channels;
     requestedDesc.mSampleRate = spec->freq;
-    
+
     requestedDesc.mBitsPerChannel = spec->format & 0xFF;
     if (spec->format & 0x8000)
         requestedDesc.mFormatFlags |= kLinearPCMFormatFlagIsSignedInteger;
@@ -233,27 +231,27 @@ int Core_OpenAudio(_THIS, SDL_AudioSpec *spec)
     requestedDesc.mBytesPerFrame = requestedDesc.mBitsPerChannel * requestedDesc.mChannelsPerFrame / 8;
     requestedDesc.mBytesPerPacket = requestedDesc.mBytesPerFrame * requestedDesc.mFramesPerPacket;
 
-
     /* Locate the default output audio unit */
+    SDL_memset(&desc, '\0', sizeof (desc));
     desc.componentType = kAudioUnitType_Output;
     desc.componentSubType = kAudioUnitSubType_DefaultOutput;
     desc.componentManufacturer = kAudioUnitManufacturer_Apple;
     desc.componentFlags = 0;
     desc.componentFlagsMask = 0;
-    
-    comp = FindNextComponent (NULL, &desc);
+
+    comp = AudioComponentFindNext_fn (NULL, &desc);
     if (comp == NULL) {
-        SDL_SetError ("Failed to start CoreAudio: FindNextComponent returned NULL");
+        SDL_SetError ("Failed to start CoreAudio: AudioComponentFindNext returned NULL");
         return -1;
     }
-    
+
     /* Open & initialize the default output audio unit */
-    result = OpenAComponent (comp, &outputAudioUnit);
-    CHECK_RESULT("OpenAComponent")
+    result = AudioComponentInstanceNew_fn (comp, &outputAudioUnit);
+    CHECK_RESULT("AudioComponentInstanceNew")
 
     result = AudioUnitInitialize (outputAudioUnit);
     CHECK_RESULT("AudioUnitInitialize")
-                
+
     /* Set the input format of the audio unit. */
     result = AudioUnitSetProperty (outputAudioUnit,
                                kAudioUnitProperty_StreamFormat,
@@ -276,15 +274,14 @@ int Core_OpenAudio(_THIS, SDL_AudioSpec *spec)
 
     /* Calculate the final parameters for this audio specification */
     SDL_CalculateAudioSpec(spec);
-    
+
     /* Allocate a sample buffer */
     bufferOffset = bufferSize = this->spec.size;
     buffer = SDL_malloc(bufferSize);
 
     /* Finally, start processing of the audio unit */
     result = AudioOutputUnitStart (outputAudioUnit);
-    CHECK_RESULT("AudioOutputUnitStart")    
-    
+    CHECK_RESULT("AudioOutputUnitStart")
 
     /* We're running! */
     return(1);
