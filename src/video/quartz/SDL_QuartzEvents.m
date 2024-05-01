@@ -1166,7 +1166,7 @@ char *QZ_GetIMValues(_THIS, SDL_imvalue value, int *alt)
             *alt = GetEnableIME();
             return NULL;
         case SDL_IM_FONT_SIZE:
-            *alt = [field_edit getFontHeight];
+            *alt = (int)[field_edit getFontHeight];
             return NULL;
         default:
             SDL_SetError("QZ_GetIMValues: nuknown enum type %d", value);
@@ -1185,7 +1185,7 @@ int QZ_FlushIMString(_THIS, void *buffer)
             *(char *)buffer = 0;
         }
     }
-    return [field_edit getTextLength];
+    return (int)[field_edit getTextLength];
 }
 
 #else /* !ENABLE_IM_EVENT */
