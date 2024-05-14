@@ -23,7 +23,7 @@ RedHat Œn‚Ìê‡Aautoconf libXt-devel libXaw-devel ‚ ‚½‚è‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚
 
 ### macOS  
 $ ./autogen.sh  
-$ ./configure --disable-video-x11  
+$ ./configure  
 $ make  
 $ sudo make install  
 Xcode, Command line tools for Xcode ‚ğƒCƒ“ƒXƒg[ƒ‹‚µ‚Ä‚¨‚¢‚Ä‚­‚¾‚³‚¢B  
