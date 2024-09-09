@@ -354,7 +354,8 @@ typedef enum {
 	SDL_IM_ENABLE = 1,
 	SDL_IM_FLIP,
 	SDL_IM_ONOFF,
-	SDL_IM_FONT_SIZE
+	SDL_IM_FONT_SIZE,
+	SDL_IM_MESSAGE_UNICODE
 } SDL_imvalue;
 
 extern DECLSPEC int SDL_SetIMPosition( int x, int y );
