@@ -36,9 +36,10 @@ Homebrew で autoconf をインストールしておいて下さい。
 `char *SDL_SetIMValues(SDL_imvalue value, ...);`  
 　IM の状態設定を行います。  
 引数: SDL_imvalue  
-　SDL_IM_ENABLE　IM の有効無効  
-　SDL_IM_ONOFF　IM の ON/OFF  
+　SDL_IM_ENABLE　IM の有効(1)、無効(0)  
+　SDL_IM_ONOFF　IM の ON(1)、OFF(0)  
 　SDL_IM_FONT_SIZE　変換中文字列のフォントサイズ(Windows のみ)  
+　SDL_IM_MESSAGE_UNICODE　確定文字列をSDL_FlushIMStringで取得(0)、SDL_KEYDOWNのevent.key.keysym.unicodeで渡す(1)  
 返値: エラー文字列 NULLなら正常終了  
 例)
 `SDL_SetIMValues(SDL_IM_ENABLE, 1, NULL);`  
@@ -47,9 +48,10 @@ Homebrew で autoconf をインストールしておいて下さい。
 `char *SDL_GetIMValues(SDL_imvalue value, ...);`  
 　IM の状態を取得します。  
 引数: SDL_imvalue  
-　SDL_IM_ENABLE　IM の有効無効  
-　SDL_IM_ONOFF　IM の ON/OFF  
+　SDL_IM_ENABLE　IM の有効(1)、無効(0)  
+　SDL_IM_ONOFF　IM の ON(1)、OFF(0)  
 　SDL_IM_FONT_SIZE　変換中文字列のフォントサイズ(Windows のみ)  
+　SDL_IM_MESSAGE_UNICODE　確定文字列をSDL_FlushIMStringで取得(0)、SDL_KEYDOWNのevent.key.keysym.unicodeで渡す(1)  
 返値: エラー文字列 NULLなら正常終了  
 例)
 `SDL_GetIMValues(SDL_IM_ONOFF, &stat, NULL);`  
@@ -62,8 +64,12 @@ Homebrew で autoconf をインストールしておいて下さい。
 
 `int SDL_FlushIMString(void *buffer);`  
 　変換確定した文字列を取得します。  
-引数: buffer 文字列を格納するバッファ NULL の場合文字列長のみ取得  
-返値  文字列長  
+引数: buffer 文字列を格納するバッファ NULL の場合バイト数/文字数のみ取得  
+返値  Shift JISの場合バイト数、UTF-16LEの場合文字数  
+　文字列の末尾に 0 は付加されませんので、まずはNULLでバイト数/文字数を取得してバッファを確保してください。  
+　初期状態ではShift JISで格納されますが、`SDL_EnableUNICODE(1);`を実行している場合UTF-16LEで格納されます。  
+　IMEで文字列を確定するとevent.key.keysym.scancodeとevent.key.keysym.symが0のSDL_KEYDOWNが送られてきますので、SDL_FlushIMString()で確定文字列を取得してください。  
+　`SDL_SetIMValues(SDL_IM_MESSAGE_UNICODE, 1, NULL);`を実行するとevent.key.keysym.unicodeに確定文字がUTF-16LEで格納されたSDL_KEYDOWNで順番に送られてきます。  
 
 `void SDL_SetCompositionFontName(const char *name);`  
 　変換中文字列で使用するフォント名を指定します。  
