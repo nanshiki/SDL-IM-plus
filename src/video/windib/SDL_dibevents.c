@@ -364,10 +364,20 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			if (lParam & GCS_RESULTSTR) {
 				/* Send KEYDOWN event to fix some IME that doesn't sent key down event 
 					after composition. */
-				event_keydown.type = SDL_KEYDOWN;
-				SDL_PushEvent(&event_keydown);
-				FLIP_BREAK;
+				if(IM_Context.bMessageUnicode) {
+					int i;
+					for (i = 0 ; i < IM_Context.im_compose_sz / 2 ; i++) {
+						SDL_Event event = { 0 };
+						event.type = SDL_KEYDOWN;
+						event.key.keysym.unicode = IM_Context.string.im_wide_char_buffer[i];
+						SDL_PushEvent(&event);
+					}
+				} else {
+					event_keydown.type = SDL_KEYDOWN;
+					SDL_PushEvent(&event_keydown);
+				}
 			}
+			FLIP_BREAK;
 			break;
 #endif
 		default: {
@@ -934,6 +944,9 @@ char *DIB_SetIMValues(_THIS, SDL_imvalue value, int alt)
 				ImmReleaseContext(SDL_Window, imc);
 			}
 			return NULL;
+		case SDL_IM_MESSAGE_UNICODE:
+			IM_Context.bMessageUnicode = alt;
+			return NULL;
 		default:
 			SDL_SetError("SDL_SetIMValues: unknow enum type: %d", value);
 			return "SDL_SetIMValues: unknow enum type";
@@ -982,6 +995,9 @@ char *DIB_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 				ReleaseDC(SDL_Window, hc);
 				*alt = abs(lf.lfHeight);
 			}
+			return NULL;
+		case SDL_IM_MESSAGE_UNICODE:
+			*alt = IM_Context.bMessageUnicode;
 			return NULL;
 		default:
 			SDL_SetError("DIB_GetIMValues: nuknown enum type %d", value);

@@ -100,17 +100,32 @@ static inline void QZ_SetFrame(_THIS, NSScreen *nsscreen, NSRect frame)
     NSRange   _selectedRange;
     SDL_Rect  _inputRect;
     IMETextView *_markedLabel;
+    int _textLength;
     char _textSJIS[SJIS_LENGTH];
+    unsigned short _textUnicode[SJIS_LENGTH];
     SDL_Event event_keydown;
+    int _message_unicode;
 }
 - (void)doCommandBySelector:(SEL)myselector;
 - (void)setInputXY:(int)x y:(int)y;
 - (void)setFontHeight:(int)h;
 - (int)getFontHeight;
 - (int)getTextLength;
+- (void)setMessageUnicode:(int)f;
+- (int)getMessageUnicode;
 @end
 
 @implementation SDLTranslatorResponder
+- (void)setMessageUnicode:(int)f
+{
+    _message_unicode = f;
+}
+
+- (int)getMessageUnicode
+{
+    return _message_unicode;
+}
+
 - (void)setFontHeight:(int)h
 {
     _inputRect.h = h;
@@ -123,15 +138,16 @@ static inline void QZ_SetFrame(_THIS, NSScreen *nsscreen, NSRect frame)
 
 - (int)getTextLength
 {
-    if(_textSJIS) {
-        return strlen(_textSJIS);
-    }
-    return 0;
+    return _textLength;
 }
 
 - (char *)getText
 {
-    return _textSJIS;
+    if (SDL_TranslateUNICODE) {
+        return (char *)_textUnicode;
+    } else {
+        return _textSJIS;
+    }
 }
 
 - (void)setInputXY:(int)x y:(int)y
@@ -144,19 +160,50 @@ static inline void QZ_SetFrame(_THIS, NSScreen *nsscreen, NSRect frame)
 {
     /* TODO: Make use of replacementRange? */
 
-    char *sjis;
     /* Could be NSString or NSAttributedString, so we have
      * to test and convert it before return as SDL event */
-    if ([aString isKindOfClass: [NSAttributedString class]]) {
-        sjis = [[aString string] cStringUsingEncoding:NSShiftJISStringEncoding];
+    if(_message_unicode) {
+        unsigned short *u16;
+        if ([aString isKindOfClass: [NSAttributedString class]]) {
+            u16 = (unsigned short *)[[aString string] cStringUsingEncoding:NSUTF16LittleEndianStringEncoding];
+        } else {
+            u16 = (unsigned short *)[aString cStringUsingEncoding:NSUTF16LittleEndianStringEncoding];
+        }
+        while(*u16) {
+            SDL_keysym sdlkeysym;
+            sdlkeysym.scancode = 0;
+            sdlkeysym.sym = SDLK_UNKNOWN;
+            sdlkeysym.mod = KMOD_NONE;
+            sdlkeysym.unicode = *u16++;
+            SDL_PrivateKeyboard(SDL_PRESSED, &sdlkeysym);
+        }
     } else {
-        sjis = [aString cStringUsingEncoding:NSShiftJISStringEncoding];
+        if (SDL_TranslateUNICODE) {
+            unsigned short *u16;
+            if ([aString isKindOfClass: [NSAttributedString class]]) {
+                u16 = (unsigned short *)[[aString string] cStringUsingEncoding:NSUTF16LittleEndianStringEncoding];
+            } else {
+                u16 = (unsigned short *)[aString cStringUsingEncoding:NSUTF16LittleEndianStringEncoding];
+            }
+            _textLength = 0;
+            while(*u16 && _textLength < SJIS_LENGTH - 1) {
+                _textUnicode[_textLength++] = *u16++;
+            }
+            _textUnicode[_textLength] = 0;
+        } else {
+            char *sjis;
+            if ([aString isKindOfClass: [NSAttributedString class]]) {
+                sjis = [[aString string] cStringUsingEncoding:NSShiftJISStringEncoding];
+            } else {
+                sjis = [aString cStringUsingEncoding:NSShiftJISStringEncoding];
+            }
+            strncpy(_textSJIS, sjis, SJIS_LENGTH);
+            _textSJIS[SJIS_LENGTH - 1] = 0;
+            _textLength = strlen(_textSJIS);
+        }
+        event_keydown.type = SDL_KEYDOWN;
+        SDL_PushEvent(&event_keydown);
     }
-    strncpy(_textSJIS, sjis, SJIS_LENGTH);
-    _textSJIS[SJIS_LENGTH - 1] = 0;
-
-    event_keydown.type = SDL_KEYDOWN;
-    SDL_PushEvent(&event_keydown);
 
     [_markedLabel setHidden:YES];
     _markedLabel.text = nil;

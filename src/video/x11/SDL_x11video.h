@@ -169,6 +169,7 @@ struct SDL_PrivateVideoData {
 		/* Switch of XIM InputContext */
 		char ic_focus;
 		char im_enable;
+		int im_message_unicode;
 
 		/* Decide if OverTheSpot, OnTheSpot, and Root input style is enabled. */
 		char bEnable_OverTheSpot;

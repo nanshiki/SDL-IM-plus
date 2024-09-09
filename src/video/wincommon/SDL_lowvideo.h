@@ -101,6 +101,7 @@ typedef struct {
 	int bFlip;   
 	int bEnable; 
 	int bCompos;
+	int bMessageUnicode;
 
 	void *notify_data;
 	void (*notify_func)(void*);

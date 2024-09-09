@@ -424,6 +424,7 @@ static int X11_DispatchEvent(_THIS)
 		return 0;
 	}
 
+#ifndef ENABLE_IM_EVENT
 #ifdef X_HAVE_UTF8_STRING
 	/* If we are translating with IM, we need to pass all events
 	   to XFilterEvent, and discard those filtered events immediately.  */
@@ -432,6 +433,7 @@ static int X11_DispatchEvent(_THIS)
 	     && XFilterEvent(&xevent, None) ) {
 		return 0;
 	}
+#endif
 #endif
 
 	posted = 0;
@@ -601,7 +603,9 @@ printf("KeyPress (X11 keycode = 0x%X)\n", xevent.xkey.keycode);
 		}
 #endif
 		/* If we're not doing translation, we're done! */
+#ifndef ENABLE_IM_EVENT
 		if ( !SDL_TranslateUNICODE ) {
+#endif
 			/* Get the translated SDL virtual keysym and put it on the queue.*/
 			keysym.scancode = keycode;
 			keysym.sym = X11_TranslateKeycode(SDL_Display, keycode);
@@ -609,7 +613,9 @@ printf("KeyPress (X11 keycode = 0x%X)\n", xevent.xkey.keycode);
 			keysym.unicode = 0;
 			posted = SDL_PrivateKeyboard(SDL_PRESSED, &keysym);
 			break;
+#ifndef ENABLE_IM_EVENT
 		}
+#endif
 		/* Look up the translated value for the key event */
 #ifdef X_HAVE_UTF8_STRING
 		if ( SDL_IC != NULL ) {
@@ -1449,7 +1455,6 @@ void X11_InitOSKeymap(_THIS)
 }
 
 #ifdef ENABLE_IM_EVENT
-extern int SDL_TranslateUNICODE;
 void xim_lookup_key(_THIS, XKeyPressedEvent *event)
 {
 	KeySym keysym;
@@ -1461,41 +1466,55 @@ void xim_lookup_key(_THIS, XKeyPressedEvent *event)
 			IM_Context.im_buffer_len = BASE_BUFSIZE;
 			IM_Context.string.im_wide_char_buffer = (wchar_t*)malloc(IM_Context.im_buffer_len*sizeof(wchar_t));
 		}
-
-		//memset(IM_Context.string.im_wide_char_buffer, 0, IM_Context.im_buffer_len*sizeof(wchar_t));
 		IM_Context.string.im_wide_char_buffer[0] = '\0';
-
-		//if (SDL_TranslateUNICODE)
-			IM_Context.im_compose_len = XwcLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_wide_char_buffer, IM_Context.im_buffer_len, &keysym, &status);
-		//else
-		//	IM_Context.im_compose_len = XmbLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_multi_byte_buffer, IM_Context.im_buffer_len*sizeof(wchar_t), &keysym, &status);
-
+		IM_Context.im_compose_len = XwcLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_wide_char_buffer, IM_Context.im_buffer_len, &keysym, &status);
 		if ((status == XBufferOverflow)) {
 			IM_Context.im_buffer_len = IM_Context.im_compose_len + 1;
 			IM_Context.string.im_wide_char_buffer = (wchar_t*)realloc(IM_Context.string.im_wide_char_buffer, IM_Context.im_buffer_len*sizeof(wchar_t));
-			//memset(IM_Context.string.im_wide_char_buffer, 0, IM_Context.im_buffer_len*sizeof(wchar_t));
-
-			//if (SDL_TranslateUNICODE)
-				IM_Context.im_compose_len = XwcLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_wide_char_buffer, IM_Context.im_buffer_len, &keysym, &status);
-			//else
-			//	IM_Context.im_compose_len = XmbLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_multi_byte_buffer, IM_Context.im_buffer_len*sizeof(wchar_t), &keysym, &status);
+			IM_Context.im_compose_len = XwcLookupString(IM_Context.SDL_XIC, event, IM_Context.string.im_wide_char_buffer, IM_Context.im_buffer_len, &keysym, &status);
 		}
 		if (status != XLookupChars) {
 			IM_Context.im_compose_len = 0;
 		}
 		else {
-			//if (SDL_TranslateUNICODE)
-				IM_Context.string.im_wide_char_buffer[IM_Context.im_compose_len] = '\0';
-			//else
-			//	IM_Context.string.im_multi_byte_buffer[IM_Context.im_compose_len] = '\0';
+			IM_Context.string.im_wide_char_buffer[IM_Context.im_compose_len] = '\0';
 		}
-		for (i = 0; i < IM_Context.im_compose_len ; i++) {
-			SDL_keysym sdlkeysym;
-			sdlkeysym.scancode = 0;
-			sdlkeysym.sym = SDLK_UNKNOWN;
-			sdlkeysym.mod = KMOD_NONE;
-			sdlkeysym.unicode = IM_Context.string.im_wide_char_buffer[i];
-			SDL_PrivateKeyboard(SDL_PRESSED, &sdlkeysym);
+		if(IM_Context.im_message_unicode) {
+			for (i = 0; i < IM_Context.im_compose_len ; i++) {
+				SDL_keysym sdlkeysym;
+				sdlkeysym.scancode = 0;
+				sdlkeysym.sym = SDLK_UNKNOWN;
+				sdlkeysym.mod = KMOD_NONE;
+				sdlkeysym.unicode = IM_Context.string.im_wide_char_buffer[i];
+				SDL_PrivateKeyboard(SDL_PRESSED, &sdlkeysym);
+			}
+		} else if (!SDL_TranslateUNICODE) {
+			iconv_t ic;
+			unsigned char uni[4];
+			char *pu;
+			char *ps;
+			size_t us, ss;
+			int len;
+			ic = iconv_open("Shift_JIS", "UTF-16BE");
+			len = 0;
+			for(i = 0 ; i < IM_Context.im_compose_len ; i++) {
+				uni[0] = (IM_Context.string.im_wide_char_buffer[i] >> 8) & 0xff;
+				uni[1] = IM_Context.string.im_wide_char_buffer[i] & 0xff;
+				uni[2] = 0;
+				us = 2;
+				ss = 4;
+				pu = (char *)uni;
+				ps = &IM_Context.string.im_multi_byte_buffer[len];
+				IM_Context.string.im_multi_byte_buffer[len + 1] = 0;
+				iconv(ic, &pu, &us, &ps, &ss);
+				len++;
+				if(IM_Context.string.im_multi_byte_buffer[len]) {
+					len++;
+				}
+			}
+			IM_Context.string.im_multi_byte_buffer[len] = 0;
+			iconv_close(ic);
+			IM_Context.im_compose_len = len;
 		}
 	}
 	else {
@@ -1694,6 +1713,9 @@ char *X11_SetIMValues(_THIS, SDL_imvalue value, int alt)
 			XFree(list);
 		}
 		return NULL;
+	case SDL_IM_MESSAGE_UNICODE:
+		IM_Context.im_message_unicode = alt;
+		return NULL;
 	default:
 	    SDL_SetError("X11_SetIMValues: unknown enum type: %d", value);
 	    return "Unknown enum type";
@@ -1748,6 +1770,9 @@ char *X11_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 				return NULL;
 			}
 		}
+	case SDL_IM_MESSAGE_UNICODE:
+		*alt = IM_Context.im_message_unicode;
+		return NULL;
 	default:
 	    SDL_SetError("X11_GetIMValues: unknown enum type: %d", value);
 	    return "Unknown enum type";
@@ -1761,26 +1786,24 @@ char *X11_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 
 int X11_FlushIMString(_THIS, void *buffer)
 {
-    int result;
-    if (buffer && IM_Context.im_compose_len) {
-	if (SDL_TranslateUNICODE) {
-	    int i = 0;
-	    Uint16* b = (Uint16*)buffer;
-	    while (i < IM_Context.im_compose_len) {
-		b[i] = IM_Context.string.im_wide_char_buffer[i];
-		++i;
-	    }
+	int result;
+	if (buffer && IM_Context.im_compose_len) {
+		if (SDL_TranslateUNICODE) {
+			int i = 0;
+			Uint16* b = (Uint16*)buffer;
+			while (i < IM_Context.im_compose_len) {
+				b[i] = IM_Context.string.im_wide_char_buffer[i];
+				++i;
+			}
+		} else {
+			memcpy(buffer, IM_Context.string.im_multi_byte_buffer, IM_Context.im_compose_len);
+		}
+		result = IM_Context.im_compose_len;
+		IM_Context.im_compose_len = 0;
+	} else {
+		result = IM_Context.im_compose_len;
 	}
-	else
-	    memcpy(buffer, IM_Context.string.im_multi_byte_buffer, IM_Context.im_compose_len);
-	
-	result = IM_Context.im_compose_len;
-	IM_Context.im_compose_len = 0;
-    }
-    else
-    	result = IM_Context.im_compose_len;
-    	
-    return result;
+	return result;
 }
 
 #else /* ! ENABLE_IM_EVENT */

@@ -1075,6 +1075,8 @@ int QZ_SetIMPosition(_THIS, int x, int y)
     return 0;
 }
 
+static int message_unicode;
+
 void QZ_EnableIME(_THIS)
 { @autoreleasepool
 {
@@ -1086,6 +1088,7 @@ void QZ_EnableIME(_THIS)
         [field_edit release];
     }
     field_edit =  [[SDLTranslatorResponder alloc] initWithFrame: NSMakeRect(0.0, 0.0, 0.0, 0.0)];
+    [field_edit setMessageUnicode:message_unicode];
 
     [parentView addSubview: field_edit];
     [qz_window makeFirstResponder: field_edit];
@@ -1141,6 +1144,10 @@ char *QZ_SetIMValues(_THIS, SDL_imvalue value, int alt)
         case SDL_IM_FONT_SIZE:
             [field_edit setFontHeight:alt];
             return NULL;
+        case SDL_IM_MESSAGE_UNICODE:
+            message_unicode = alt;
+            [field_edit setMessageUnicode:alt];
+            return NULL;
         default:
              SDL_SetError("SDL_SetIMValues: unknow enum type: %d", value);
              return "SDL_SetIMValues: unknow enum type";
@@ -1168,6 +1175,9 @@ char *QZ_GetIMValues(_THIS, SDL_imvalue value, int *alt)
         case SDL_IM_FONT_SIZE:
             *alt = (int)[field_edit getFontHeight];
             return NULL;
+        case SDL_IM_MESSAGE_UNICODE:
+            *alt = message_unicode;
+            return NULL;
         default:
             SDL_SetError("QZ_GetIMValues: nuknown enum type %d", value);
             return "QZ_GetIMValues: nuknown enum type";
@@ -1177,15 +1187,24 @@ char *QZ_GetIMValues(_THIS, SDL_imvalue value, int *alt)
 
 int QZ_FlushIMString(_THIS, void *buffer)
 {
+    int len = (int)[field_edit getTextLength];
     if(buffer) {
         char *str = [field_edit getText];
         if(str) {
-            strcpy(buffer, str);
+            if (SDL_TranslateUNICODE) {
+                unsigned short *dst = (unsigned short *)buffer;
+                unsigned short *src = (unsigned short *)str;
+                while(*src) {
+                    *dst++ = *src++;
+                }
+            } else {
+                memcpy(buffer, str, len);
+            }
         } else {
             *(char *)buffer = 0;
         }
     }
-    return (int)[field_edit getTextLength];
+    return len;
 }
 
 #else /* !ENABLE_IM_EVENT */
