@@ -135,6 +135,7 @@ typedef struct SDL_Surface {
 
 /** Available for SDL_SetVideoMode() */
 /*@{*/
+#define SDL_NORESETKEY	0x00800000
 #define SDL_ANYFORMAT	0x10000000	/**< Allow any video depth/pixel-format */
 #define SDL_HWPALETTE	0x20000000	/**< Surface has exclusive palette */
 #define SDL_DOUBLEBUF	0x40000000	/**< Set up double-buffered video mode */
