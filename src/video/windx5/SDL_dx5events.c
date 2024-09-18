@@ -309,9 +309,13 @@ static void handle_keyboard(const int numevents, DIDEVICEOBJECTDATA *keybuf)
 		if ( keybuf[i].dwData & 0x80 ) {
 #ifdef ENABLE_IM_EVENT
 			if (!IM_Context.bCompos && (GetTickCount() - end_ticks > IME_END_CR_WAIT || keybuf[i].dwOfs != 0x1c)) {
+				if(IM_Context.im_compose_sz == 0 || (GetAsyncKeyState(VK_CONTROL) & 0x8000) == 0 || (keybuf[i].dwOfs != 0x31 && keybuf[i].dwOfs != 0x32)) {
 #endif
-				posted = SDL_PrivateKeyboard(SDL_PRESSED, TranslateKey(keybuf[i].dwOfs, &keysym, 1));
+					posted = SDL_PrivateKeyboard(SDL_PRESSED, TranslateKey(keybuf[i].dwOfs, &keysym, 1));
 #ifdef ENABLE_IM_EVENT
+				} else if(IM_Context.im_compose_sz > 0 && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+					SDL_PrivateKeyboard(SDL_PRESSED, TranslateKey(0x1d, &keysym, 1));
+				}
 			}
 #endif
 		} else {

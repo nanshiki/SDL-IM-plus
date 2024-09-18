@@ -233,6 +233,11 @@ LRESULT DIB_HandleMessage(_THIS, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 #endif
 				{
 					posted = SDL_PrivateKeyboard(SDL_PRESSED,key);
+#ifdef ENABLE_IM_EVENT
+				} else if (IM_Context.bCompos && key->scancode == 0x1d) {
+					key->sym = 0x132;
+					posted = SDL_PrivateKeyboard(SDL_PRESSED,key);
+#endif
 				}
 			}
 		}
