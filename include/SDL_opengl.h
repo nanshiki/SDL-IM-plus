@@ -57,8 +57,9 @@
  */
 /*@{*/
 #ifndef NO_SDL_GLEXT
-#if !defined(__glext_h_) && !defined(GL_GLEXT_LEGACY)
+#if !(defined(__glext_h_) || defined(__gl_glext_h_)) && !defined(GL_GLEXT_LEGACY)
 #define __glext_h_
+#define __gl_glext_h_
 
 #ifdef __cplusplus
 extern "C" {
