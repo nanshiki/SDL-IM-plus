@@ -1625,7 +1625,7 @@ void destroy_callback_func(XIM current_ic, XPointer client_data, XPointer call_d
     xim_free(this);
 }
 
-void im_callback(XIM xim, XPointer client_data, XPointer call_data)
+void im_callback(Display xim, XPointer client_data, XPointer call_data)
 {
 	XIMStyle input_style;
 	XIMStyles *xim_styles = NULL;
@@ -1982,7 +1982,7 @@ int xim_init(_THIS)
 		return 0;
 	}
 
-	if (XRegisterIMInstantiateCallback(SDL_Display, NULL, NULL, NULL, (XIMProc)im_callback, NULL) != True) {
+	if (XRegisterIMInstantiateCallback(SDL_Display, NULL, NULL, NULL, (XIDProc)im_callback, NULL) != True) {
 		SDL_SetError("XRegisterIMInstantiateCallback false.");
 #ifdef DEBUG_XEVENTS
 		printf("XRegisterIMInstantiateCallback false.\n");
